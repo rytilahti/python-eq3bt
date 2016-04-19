@@ -39,6 +39,7 @@ class EQ3BTSmartThermostat:
         self._conn.connect()
 
         self._set_time()
+        self.update()
 
     def __str__(self):
         return "MAC: " + self._conn.mac + " Mode: " + str(self.mode) + " = " + self.mode_readable + " T: " + str(self.target_temperature)
