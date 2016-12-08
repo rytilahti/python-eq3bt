@@ -22,6 +22,9 @@ PROP_SCHEDULE_RETURN = 0x21
 
 PROP_TEMPERATURE_WRITE = 0x41
 
+EQ3BT_MIN_TEMP = 5.0
+EQ3BT_MAX_TEMP = 30.0
+
 
 # pylint: disable=too-many-instance-attributes
 class EQ3BTSmartThermostat:
@@ -82,12 +85,12 @@ class EQ3BTSmartThermostat:
     @property
     def min_temp(self):
         """Return the minimum temperature."""
-        return 4.5
+        return EQ3BT_MIN_TEMP
 
     @property
     def max_temp(self):
         """Return the maximum temperature."""
-        return 30.5
+        return EQ3BT_MAX_TEMP
 
     @staticmethod
     def decode_mode(mode):
