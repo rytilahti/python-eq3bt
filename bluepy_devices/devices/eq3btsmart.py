@@ -38,7 +38,6 @@ class EQ3BTSmartThermostat:
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
         self._conn.connect()
 
-        self._set_time()
         self.update()
 
     def __str__(self):
@@ -50,14 +49,13 @@ class EQ3BTSmartThermostat:
             self._mode = data[2] & 1
             self._target_temperature = data[5] / 2.0
 
-# TO BE TESTED
-    def _set_time(self):
-        """Set the correct time into the thermostat."""
+    def update(self):
+        """Update the data from the thermostat. Always sets the current time."""
         time = datetime.now()
-        value = struct.pack('BBBBBB', int(time.strftime("%y")),
-                            time.month, time.day, time.hour,
-                            time.minute, time.second)
-        self._conn.write_command_raw(PROP_WRITE_HANDLE, value)
+        value = struct.pack('BBBBBBB', PROP_INFO_QUERY,
+                            time.year % 100, time.month, time.day,
+                            time.hour, time.minute, time.second)
+        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
     @property
     def target_temperature(self):
@@ -91,10 +89,6 @@ class EQ3BTSmartThermostat:
         """Return the maximum temperature."""
         return 30.5
 
-    def pack_byte(self, byte):
-        """Pack a byte."""
-        return self._conn.pack_byte(byte)
-
     @staticmethod
     def decode_mode(mode):
         """Convert the numerical mode to a human-readable description."""
@@ -114,7 +108,3 @@ class EQ3BTSmartThermostat:
             ret = ret + " window"
 
         return ret
-
-    def update(self):
-        """Update the data from the thermostat."""
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, self.pack_byte(PROP_INFO_QUERY))
