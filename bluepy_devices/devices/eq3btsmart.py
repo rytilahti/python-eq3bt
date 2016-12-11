@@ -33,12 +33,15 @@ PROP_ID_QUERY = 0
 PROP_ID_RETURN = 1
 PROP_INFO_QUERY = 3
 PROP_INFO_RETURN = 2
+PROP_COMFORT_ECO_CONFIG = 0x11
 PROP_WINDOW_OPEN_CONFIG = 0x14
 PROP_SCHEDULE_QUERY = 0x20
 PROP_SCHEDULE_RETURN = 0x21
 
 PROP_MODE_WRITE = 0x40
 PROP_TEMPERATURE_WRITE = 0x41
+PROP_COMFORT = 0x43
+PROP_ECO = 0x44
 PROP_BOOST = 0x45
 PROP_LOCK = 0x80
 
@@ -239,6 +242,25 @@ class EQ3BTSmartThermostat:
     def low_battery(self):
         """Returns True if the thermostat reports a low battery."""
         return bool(self._raw_mode & BITMASK_BATTERY)
+
+    def temperature_presets(self, comfort, eco):
+        """Set the thermostats preset temperatures comfort (sun) and
+        eco (moon)."""
+        self._verify_temperature(comfort)
+        self._verify_temperature(eco)
+        value = struct.pack('BBB', PROP_COMFORT_ECO_CONFIG, int(comfort * 2),
+                            int(eco * 2))
+        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+
+    def activate_comfort(self):
+        """Activates the comfort temperature."""
+        value = struct.pack('B', PROP_COMFORT)
+        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+
+    def activate_eco(self):
+        """Activates the comfort temperature."""
+        value = struct.pack('B', PROP_ECO)
+        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
     @property
     def min_temp(self):
