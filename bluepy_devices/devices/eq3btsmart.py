@@ -26,6 +26,11 @@ EQ3BT_MIN_TEMP = 5.0
 EQ3BT_MAX_TEMP = 30.0
 
 
+class EQ3BTSmartTemperatureError(Exception):
+    """Temperature out of range error."""
+    pass
+
+
 # pylint: disable=too-many-instance-attributes
 class EQ3BTSmartThermostat:
     """Representation of a EQ3 Bluetooth Smart thermostat."""
@@ -45,6 +50,12 @@ class EQ3BTSmartThermostat:
 
     def __str__(self):
         return "MAC: " + self._conn.mac + " Mode: " + str(self.mode) + " = " + self.mode_readable + " T: " + str(self.target_temperature)
+
+    def _verify_temperature(self, temp):
+        """Verifies that the temperature is valid, raises \
+        EQ3BTSmartTemperatureError otherwise."""
+        if temp < self.min_temp or temp > self.max_temp:
+            raise EQ3BTSmartTemperatureError('Temperature {} out of range [{}, {}]'.format(temp, self.min_temp, self.max_temp))
 
     def handle_notification(self, data):
         """Handle Callback from a Bluetooth (GATT) request."""
@@ -68,6 +79,7 @@ class EQ3BTSmartThermostat:
     @target_temperature.setter
     def target_temperature(self, temperature):
         """Set new target temperature."""
+        self._verify_temperature(temperature)
         value = struct.pack('BB', PROP_TEMPERATURE_WRITE, int(temperature * 2))
         # Returns INFO_QUERY, so use that
         self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
