@@ -67,6 +67,7 @@ class EQ3BTSmartThermostat:
         self._target_temperature = EQ3BTSMART_UNKOWN
         self._raw_mode = EQ3BTSMART_UNKOWN
         self._mode = EQ3BTSMART_UNKOWN
+        self._valve_state = EQ3BTSMART_UNKOWN
 
         self._away_temp = 12.0
         self._away_duration = timedelta(days=30)
@@ -97,6 +98,7 @@ class EQ3BTSmartThermostat:
         away_end = None
         if data[0] == PROP_INFO_RETURN:
             self._raw_mode = data[2]
+            self._valve_state = data[3]
             self._target_temperature = data[5] / 2.0
             if self._raw_mode & BITMASK_BOOST:
                 self._mode = EQ3BTSMART_BOOST
@@ -197,6 +199,11 @@ class EQ3BTSmartThermostat:
         """Sets boost mode."""
         value = struct.pack('BB', PROP_BOOST, bool(boost))
         self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+
+    @property
+    def valve_state(self):
+        """Returns the valve state. Probably reported as percent open."""
+        return self._valve_state
 
     @property
     def min_temp(self):
