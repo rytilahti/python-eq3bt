@@ -33,6 +33,7 @@ PROP_ID_QUERY = 0
 PROP_ID_RETURN = 1
 PROP_INFO_QUERY = 3
 PROP_INFO_RETURN = 2
+PROP_WINDOW_OPEN_CONFIG = 0x14
 PROP_SCHEDULE_QUERY = 0x20
 PROP_SCHEDULE_RETURN = 0x21
 
@@ -210,6 +211,17 @@ class EQ3BTSmartThermostat:
         """Returns True if the thermostat reports a open window
            (detected by sudden drop of temperature)"""
         return bool(self._raw_mode & BITMASK_WINDOW)
+
+    def window_open_config(self, temperature, duration):
+        """Configures the window open behavior. The duration is specified in
+        5 minute increments."""
+        self._verify_temperature(temperature)
+        if duration.seconds < 0 and duration.seconds > 3600:
+            raise ValueError
+
+        value = struct.pack('BBB', PROP_WINDOW_OPEN_CONFIG,
+                            int(temperature * 2), int(duration.seconds / 300))
+        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
     @property
     def min_temp(self):
