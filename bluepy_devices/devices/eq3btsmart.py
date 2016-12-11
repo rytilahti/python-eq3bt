@@ -40,6 +40,7 @@ PROP_SCHEDULE_RETURN = 0x21
 PROP_MODE_WRITE = 0x40
 PROP_TEMPERATURE_WRITE = 0x41
 PROP_BOOST = 0x45
+PROP_LOCK = 0x80
 
 BITMASK_MANUAL = 0x01
 BITMASK_AWAY = 0x02
@@ -224,6 +225,17 @@ class EQ3BTSmartThermostat:
         self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
     @property
+    def locked(self):
+        """Returns True if the thermostat is locked."""
+        return bool(self._raw_mode & BITMASK_LOCKED)
+
+    @locked.setter
+    def locked(self, lock):
+        """Locks or unlocks the thermostat."""
+        value = struct.pack('BB', PROP_LOCK, bool(lock))
+        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+
+    @property
     def min_temp(self):
         """Return the minimum temperature."""
         return EQ3BT_MIN_TEMP
@@ -250,5 +262,7 @@ class EQ3BTSmartThermostat:
             ret = ret + " dst"
         if mode & BITMASK_WINDOW:
             ret = ret + " window"
+        if mode & BITMASK_LOCKED:
+            ret = ret + " locked"
 
         return ret
