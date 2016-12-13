@@ -9,7 +9,9 @@ To get the current state, update() has to be called for powersaving reasons.
 import struct
 from datetime import datetime, timedelta
 from ..lib.connection import BTLEConnection
+import logging
 
+_LOGGER = logging.getLogger(__name__)
 
 EQ3BTSMART_UNKOWN = -1
 EQ3BTSMART_CLOSED = 0
@@ -79,8 +81,8 @@ class EQ3BTSmartThermostat:
         self._away_end = None
 
         self._conn = BTLEConnection(_mac)
-
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
+
         self._conn.connect()
 
         self.update()
@@ -100,11 +102,14 @@ class EQ3BTSmartThermostat:
 
     def handle_notification(self, data):
         """Handle Callback from a Bluetooth (GATT) request."""
+        _LOGGER.debug("Received notification from the device..")
         away_end = None
         if data[0] == PROP_INFO_RETURN:
             self._raw_mode = data[2]
             self._valve_state = data[3]
+
             self._target_temperature = data[5] / 2.0
+
             if self._raw_mode & BITMASK_BOOST:
                 self._mode = EQ3BTSMART_BOOST
             elif self._raw_mode & BITMASK_AWAY:
@@ -129,12 +134,19 @@ class EQ3BTSmartThermostat:
                 self._mode = EQ3BTSMART_AUTO
             self._away_end = away_end
 
+            _LOGGER.debug("Valve state: %s", self._valve_state)
+            _LOGGER.debug("Mode:        %s", self.mode_readable)
+            _LOGGER.debug("Target temp: %s", self._target_temperature)
+            _LOGGER.debug("Away end:    %s", self._away_end)
+
     def update(self):
         """Update the data from the thermostat. Always sets the current time."""
+        _LOGGER.debug("Querying the device..")
         time = datetime.now()
         value = struct.pack('BBBBBBB', PROP_INFO_QUERY,
                             time.year % 100, time.month, time.day,
                             time.hour, time.minute, time.second)
+
         self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
     @property
@@ -147,11 +159,13 @@ class EQ3BTSmartThermostat:
     @target_temperature.setter
     def target_temperature(self, temperature):
         """Set new target temperature."""
+        _LOGGER.debug("Setting new target temperature: %s", temperature)
         self._verify_temperature(temperature)
         if self._mode in EQ3BTSMART_NO_TEMP_MODES:
             return
         value = struct.pack('BB', PROP_TEMPERATURE_WRITE, int(temperature * 2))
         # Returns INFO_QUERY, so use that
+
         self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
     @property
@@ -162,6 +176,7 @@ class EQ3BTSmartThermostat:
     @mode.setter
     def mode(self, mode):
         """Set the operation mode."""
+        _LOGGER.debug("Setting new mode: %s", mode)
         mode_byte = 0
         away_end = None
         if self.mode == EQ3BTSMART_BOOST and mode != EQ3BTSMART_BOOST:
@@ -202,6 +217,7 @@ class EQ3BTSmartThermostat:
     @boost.setter
     def boost(self, boost):
         """Sets boost mode."""
+        _LOGGER.debug("Setting boost mode: %s", boost)
         value = struct.pack('BB', PROP_BOOST, bool(boost))
         self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
@@ -219,6 +235,7 @@ class EQ3BTSmartThermostat:
     def window_open_config(self, temperature, duration):
         """Configures the window open behavior. The duration is specified in
         5 minute increments."""
+        _LOGGER.debug("Window open config, temperature: %s duration: %s", temperature, duration)
         self._verify_temperature(temperature)
         if duration.seconds < 0 and duration.seconds > 3600:
             raise ValueError
@@ -235,6 +252,7 @@ class EQ3BTSmartThermostat:
     @locked.setter
     def locked(self, lock):
         """Locks or unlocks the thermostat."""
+        _LOGGER.debug("Setting the lock: %s", lock)
         value = struct.pack('BB', PROP_LOCK, bool(lock))
         self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
 
@@ -246,6 +264,7 @@ class EQ3BTSmartThermostat:
     def temperature_presets(self, comfort, eco):
         """Set the thermostats preset temperatures comfort (sun) and
         eco (moon)."""
+        _LOGGER.debug("Setting temperature presets, comfort: %s eco: %s", comfort, eco)
         self._verify_temperature(comfort)
         self._verify_temperature(eco)
         value = struct.pack('BBB', PROP_COMFORT_ECO_CONFIG, int(comfort * 2),
