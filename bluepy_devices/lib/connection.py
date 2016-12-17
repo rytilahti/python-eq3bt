@@ -26,6 +26,19 @@ class BTLEConnection(btle.DefaultDelegate):
 
         self._callback = {}
 
+    def __enter__(self):
+        """
+        Context manager __enter__ for connecting the device
+        :rtype: btle.Peripheral
+        :return:
+        """
+        self.connect()
+        return self._conn
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Disconnect when contextmanager gets finished to avoid keeping the connection open
+        self.disconnect()
+
     def __del__(self):
         """Destructor - make sure the connection is disconnected."""
         self.disconnect()
@@ -37,7 +50,7 @@ class BTLEConnection(btle.DefaultDelegate):
 
     def connect(self, error=False):
         """Connect to the Bluetooth thermostat."""
-        _LOGGER.info("BTLEConnection: connecting to " + self._mac)
+        _LOGGER.debug("BTLEConnection: connecting to %s", self._mac)
         try:
             self._conn.connect(self._mac)
             self._conn.withDelegate(self)
@@ -50,6 +63,7 @@ class BTLEConnection(btle.DefaultDelegate):
 
     def disconnect(self):
         """Close the Bluetooth connection."""
+        _LOGGER.debug("BTLEConnection: closing connection to %s", self._mac)
         self._conn.disconnect()
 
     @property
@@ -75,16 +89,17 @@ class BTLEConnection(btle.DefaultDelegate):
 
     def write_command_raw(self, handle, value, timeout=DEFAULT_TIMEOUT, wait_for_it=False, exception=False):
         """Write a GATT Command without callback - not utf-8."""
-        try:
-            self._conn.writeCharacteristic(handle, value, wait_for_it)
-            if wait_for_it:
-                while self._conn.waitForNotifications(timeout):
-                    continue
-        except btle.BTLEException:
-            if exception is False:
-                self.disconnect()
-                self.connect()
-                self.write_command_raw(handle, value, wait_for_it, True)
+        with self as conn:
+            try:
+                conn.writeCharacteristic(handle, value, wait_for_it)
+                if wait_for_it:
+                    while conn.waitForNotifications(timeout):
+                        continue
+            except btle.BTLEException:
+                if exception is False:
+                    self.disconnect()
+                    self.connect()
+                    self.write_command_raw(handle, value, wait_for_it, True)
 
     @staticmethod
     def pack_byte(byte):
