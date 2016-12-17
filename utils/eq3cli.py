@@ -14,7 +14,10 @@ def cli(ctx, mac, debug):
     else:
         logging.basicConfig(level=logging.INFO)
 
-    ctx.obj = EQ3BTSmartThermostat(mac)
+    thermostat = EQ3BTSmartThermostat(mac)
+    thermostat.update()
+    ctx.obj = thermostat
+
     if ctx.invoked_subcommand is None:
         ctx.invoke(state)
 

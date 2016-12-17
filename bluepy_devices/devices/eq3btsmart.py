@@ -83,10 +83,6 @@ class EQ3BTSmartThermostat:
         self._conn = BTLEConnection(_mac)
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
 
-        self._conn.connect()
-
-        self.update()
-
     def __str__(self):
         if self.mode == EQ3BTSMART_AWAY:
             away_end = " away end: " + str(self._away_end)
@@ -138,6 +134,9 @@ class EQ3BTSmartThermostat:
             _LOGGER.debug("Mode:        %s", self.mode_readable)
             _LOGGER.debug("Target temp: %s", self._target_temperature)
             _LOGGER.debug("Away end:    %s", self._away_end)
+
+        else:
+            _LOGGER.debug("Unknown notification %s (%s)", (data[0], data))
 
     def update(self):
         """Update the data from the thermostat. Always sets the current time."""
