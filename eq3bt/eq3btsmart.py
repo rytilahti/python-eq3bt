@@ -6,27 +6,17 @@ All temperatures in Celsius.
 To get the current state, update() has to be called for powersaving reasons.
 """
 
-import struct
-from datetime import datetime, timedelta
-from ..lib.connection import BTLEConnection
 import logging
+from datetime import datetime, timedelta
+from enum import IntEnum
+
+import struct
+from .connection import BTLEConnection
 
 _LOGGER = logging.getLogger(__name__)
 
-EQ3BTSMART_UNKOWN = -1
-EQ3BTSMART_CLOSED = 0
-EQ3BTSMART_OPEN = 1
-EQ3BTSMART_AUTO = 2
-EQ3BTSMART_MANUAL = 3
-EQ3BTSMART_AWAY = 4
-EQ3BTSMART_BOOST = 5
-
 EQ3BTSMART_OFF = 0x09
 EQ3BTSMART_ON = 0x3c
-
-EQ3BTSMART_NO_TEMP_MODES = [EQ3BTSMART_UNKOWN,
-                            EQ3BTSMART_CLOSED,
-                            EQ3BTSMART_OPEN]
 
 PROP_WRITE_HANDLE = 0x411
 PROP_NTFY_HANDLE = 0x421
@@ -59,22 +49,38 @@ EQ3BT_MIN_TEMP = 5.0
 EQ3BT_MAX_TEMP = 30.0
 
 
-class EQ3BTSmartTemperatureError(Exception):
+class Mode(IntEnum):
+    """ Thermostat modes. """
+    Unknown = -1
+    Closed = 0
+    Open = 1
+    Auto = 2
+    Manual = 3
+    Away = 4
+    Boost = 5
+
+
+MODE_NOT_TEMP = [Mode.Unknown,
+                 Mode.Closed,
+                 Mode.Open]
+
+
+class TemperatureException(Exception):
     """Temperature out of range error."""
     pass
 
 
 # pylint: disable=too-many-instance-attributes
-class EQ3BTSmartThermostat:
+class Thermostat:
     """Representation of a EQ3 Bluetooth Smart thermostat."""
 
     def __init__(self, _mac):
         """Initialize the thermostat."""
 
-        self._target_temperature = EQ3BTSMART_UNKOWN
-        self._raw_mode = EQ3BTSMART_UNKOWN
-        self._mode = EQ3BTSMART_UNKOWN
-        self._valve_state = EQ3BTSMART_UNKOWN
+        self._target_temperature = Mode.Unknown
+        self._raw_mode = Mode.Unknown
+        self._mode = Mode.Unknown
+        self._valve_state = Mode.Unknown
 
         self._away_temp = 12.0
         self._away_duration = timedelta(days=30)
@@ -84,17 +90,22 @@ class EQ3BTSmartThermostat:
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
 
     def __str__(self):
-        if self.mode == EQ3BTSMART_AWAY:
-            away_end = " away end: " + str(self._away_end)
-        else:
-            away_end = ""
-        return "MAC: " + self._conn.mac + " Mode: " + str(self.mode) + " = " + self.mode_readable + " T: " + str(self.target_temperature) + away_end
+        away_end = "no"
+        if self.mode == Mode.Away:
+            away_end = "end: %s" % self._away_end
+
+        return "[%s] Target %s (mode: %s, away: %s)" % (self._conn.mac,
+                                                        self.target_temperature,
+                                                        self.mode_readable,
+                                                        away_end)
 
     def _verify_temperature(self, temp):
-        """Verifies that the temperature is valid, raises \
-        EQ3BTSmartTemperatureError otherwise."""
+        """Verifies that the temperature is valid.
+            :raises TemperatureException: On invalid temperature.
+        """
         if temp < self.min_temp or temp > self.max_temp:
-            raise EQ3BTSmartTemperatureError('Temperature {} out of range [{}, {}]'.format(temp, self.min_temp, self.max_temp))
+            raise TemperatureException('Temperature {} out of range [{}, {}]'
+                                       .format(temp, self.min_temp, self.max_temp))
 
     def handle_notification(self, data):
         """Handle Callback from a Bluetooth (GATT) request."""
@@ -107,9 +118,9 @@ class EQ3BTSmartThermostat:
             self._target_temperature = data[5] / 2.0
 
             if self._raw_mode & BITMASK_BOOST:
-                self._mode = EQ3BTSMART_BOOST
+                self._mode = Mode.Boost
             elif self._raw_mode & BITMASK_AWAY:
-                self._mode = EQ3BTSMART_AWAY
+                self._mode = Mode.Away
                 if len(data) == 10:
                     year = 2000 + data[7]
                     month = data[9]
@@ -119,15 +130,15 @@ class EQ3BTSmartThermostat:
                     away_end = datetime(year, month, day, hour, minute)
             elif self._raw_mode & BITMASK_MANUAL:
                 if data[5] == EQ3BTSMART_OFF:
-                    self._mode = EQ3BTSMART_CLOSED
-                    self._target_temperature = float(EQ3BTSMART_UNKOWN)
+                    self._mode = Mode.Closed
+                    self._target_temperature = Mode.Unknown
                 elif data[5] == EQ3BTSMART_ON:
-                    self._mode = EQ3BTSMART_OPEN
-                    self._target_temperature = float(EQ3BTSMART_UNKOWN)
+                    self._mode = Mode.Open
+                    self._target_temperature = Mode.Unknown
                 else:
-                    self._mode = EQ3BTSMART_MANUAL
+                    self._mode = Mode.Manual
             else:
-                self._mode = EQ3BTSMART_AUTO
+                self._mode = Mode.Auto
             self._away_end = away_end
 
             _LOGGER.debug("Valve state: %s", self._valve_state)
@@ -136,7 +147,7 @@ class EQ3BTSmartThermostat:
             _LOGGER.debug("Away end:    %s", self._away_end)
 
         else:
-            _LOGGER.debug("Unknown notification %s (%s)", (data[0], data))
+            _LOGGER.debug("Unknown notification %s (%s)", data[0], data)
 
     def update(self):
         """Update the data from the thermostat. Always sets the current time."""
@@ -146,13 +157,15 @@ class EQ3BTSmartThermostat:
                             time.year % 100, time.month, time.day,
                             time.hour, time.minute, time.second)
 
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        with self._conn as conn:
+            conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def target_temperature(self):
         """Return the temperature we try to reach."""
-        if self._mode in EQ3BTSMART_NO_TEMP_MODES:
+        if self._mode in MODE_NOT_TEMP:
             return None
+
         return self._target_temperature
 
     @target_temperature.setter
@@ -160,16 +173,20 @@ class EQ3BTSmartThermostat:
         """Set new target temperature."""
         _LOGGER.debug("Setting new target temperature: %s", temperature)
         self._verify_temperature(temperature)
-        if self._mode in EQ3BTSMART_NO_TEMP_MODES:
+        if self._mode in MODE_NOT_TEMP:
+            _LOGGER.warning("Tried to set temperature when in mode %s, bailing out", self._mode)
             return
         value = struct.pack('BB', PROP_TEMPERATURE_WRITE, int(temperature * 2))
         # Returns INFO_QUERY, so use that
 
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def mode(self):
         """Return the current operation mode"""
+        if self._mode in MODE_NOT_TEMP:
+            return None
+
         return self._mode
 
     @mode.setter
@@ -178,30 +195,30 @@ class EQ3BTSmartThermostat:
         _LOGGER.debug("Setting new mode: %s", mode)
         mode_byte = 0
         away_end = None
-        if self.mode == EQ3BTSMART_BOOST and mode != EQ3BTSMART_BOOST:
+        if self.mode == Mode.Boost and mode != Mode.Boost:
             self.boost = False
 
-        if mode == EQ3BTSMART_BOOST:
+        if mode == Mode.Boost:
             self.boost = True
             return
-        elif mode == EQ3BTSMART_AWAY:
+        elif mode == Mode.Away:
             mode_byte = 0x80 | int(self._away_temp * 2)
             end = datetime.now() + self._away_duration
             away_end = struct.pack('BBBB', end.day, end.year % 100,
                                    (end.hour * 2) | (end.minute >= 30),
                                    end.month)
-        elif mode == EQ3BTSMART_CLOSED:
+        elif mode == Mode.Closed:
             mode_byte = 0x40 | EQ3BTSMART_OFF
-        elif mode == EQ3BTSMART_OPEN:
+        elif mode == Mode.Open:
             mode_byte = 0x40 | EQ3BTSMART_ON
-        elif mode == EQ3BTSMART_MANUAL:
+        elif mode == Mode.Manual:
             mode_byte = 0x40
 
         value = struct.pack('BB', PROP_MODE_WRITE, mode_byte)
         if away_end is not None:
             value += away_end
 
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def mode_readable(self):
@@ -211,14 +228,14 @@ class EQ3BTSmartThermostat:
     @property
     def boost(self):
         """Returns True if the thermostat is in boost mode."""
-        return self.mode == EQ3BTSMART_BOOST
+        return self.mode == Mode.Boost
 
     @boost.setter
     def boost(self, boost):
         """Sets boost mode."""
         _LOGGER.debug("Setting boost mode: %s", boost)
         value = struct.pack('BB', PROP_BOOST, bool(boost))
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def valve_state(self):
@@ -229,7 +246,7 @@ class EQ3BTSmartThermostat:
     def window_open(self):
         """Returns True if the thermostat reports a open window
            (detected by sudden drop of temperature)"""
-        return bool(self._raw_mode & BITMASK_WINDOW)
+        return self._raw_mode and bool(self._raw_mode & BITMASK_WINDOW)
 
     def window_open_config(self, temperature, duration):
         """Configures the window open behavior. The duration is specified in
@@ -241,24 +258,24 @@ class EQ3BTSmartThermostat:
 
         value = struct.pack('BBB', PROP_WINDOW_OPEN_CONFIG,
                             int(temperature * 2), int(duration.seconds / 300))
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def locked(self):
         """Returns True if the thermostat is locked."""
-        return bool(self._raw_mode & BITMASK_LOCKED)
+        return self._raw_mode and bool(self._raw_mode & BITMASK_LOCKED)
 
     @locked.setter
     def locked(self, lock):
         """Locks or unlocks the thermostat."""
         _LOGGER.debug("Setting the lock: %s", lock)
         value = struct.pack('BB', PROP_LOCK, bool(lock))
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def low_battery(self):
         """Returns True if the thermostat reports a low battery."""
-        return bool(self._raw_mode & BITMASK_BATTERY)
+        return self._raw_mode and bool(self._raw_mode & BITMASK_BATTERY)
 
     def temperature_presets(self, comfort, eco):
         """Set the thermostats preset temperatures comfort (sun) and
@@ -268,17 +285,17 @@ class EQ3BTSmartThermostat:
         self._verify_temperature(eco)
         value = struct.pack('BBB', PROP_COMFORT_ECO_CONFIG, int(comfort * 2),
                             int(eco * 2))
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     def activate_comfort(self):
         """Activates the comfort temperature."""
         value = struct.pack('B', PROP_COMFORT)
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     def activate_eco(self):
         """Activates the comfort temperature."""
         value = struct.pack('B', PROP_ECO)
-        self._conn.write_request_raw(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def min_temp(self):

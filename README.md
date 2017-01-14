@@ -1,20 +1,47 @@
-# bluepy_devices
-Simplified BTLE Device Interface for bluepy
+# python-eq3bt
 
-Setup
+Python library and a command line tool for EQ3 Bluetooth smart thermostats, uses bluepy for BTLE communication.
 
-python3 setup.py build
-python3 setup.py install
+This library is a simplified version of bluepy_devices from Markus Peter (https://github.com/bimbar/bluepy_devices.git)
+with support for more features and better device handling.
 
-or
+# Features
 
-pip3 install bluepy_devices
+* Reading device status: locked, low battery, valve state, window open, target temperature, active mode
+* Writing settings: target temperature, auto mode presets
+* Setting the active mode: auto, manual, boost, away
 
-Provides a basic library to connect to a BTLE device, and has at present one device interface class for basic EQ3 Bluetooth Smart functionality.
+## Not (yet) supported)
 
-CAVEAT: The device in question has to be disconnected from bluetoothd, since BTLE devices can only hold one connection at a time.
+* Reading presets
+* Changing schedules
 
-# command-line client
+# Installation
+
+```bash
+pip install python-eq3bt```
+```
+
+# Usage
+
+```
+from eq3bt import Thermostat
+
+thermostat = Thermostat('AB:CD:EF:12:23:45')
+thermostat.update()  # fetches data from the thermostat
+
+print(thermostat)
+```
+
+"""
+Notice: The device in question has to be disconnected from bluetoothd, since BTLE devices can only hold one connection at a time.
+
+The library will try to connect to the device second time in case it wasn't successful in the first time,
+which can happen if you are running other applications connecting to the same thermostat.
+"""
+
+# Command-line tool
+
 To test all available functionality a cli tool inside utils can be used.
 
 EQ3_MAC environment variable can be used to define mac to avoid typing it:
@@ -24,25 +51,25 @@ export EQ3_MAC=XX:XX
 
 Without parameters current state of the device is printed out.
 ```bash
-python -m utils.eq3cli
+eq3cli
 
-MAC: XX:XX:XX:XX:XX:XX Mode: 2 = auto dst locked T: 20.0
-Locked: True
+[00:1A:22:XX:XX:XX] Target 17.0 (mode: auto dst, away: no)
+Locked: False
 Batter low: False
 Window open: False
 Boost: False
-Current target temp: 20.0
+Current target temp: 17.0
 Current mode: auto dst locked
 Valve: 0
 ```
 
 Getting & setting values.
 ```bash
-python -m utils.eq3cli temp
+eq3cli temp
 
 Current target temp: 17.0
 
-python -m utils.eq3cli temp --target 20
+eq3cli temp --target 20
 
 Current target temp: 17.0
 Setting target temp: 20.0
@@ -50,5 +77,5 @@ Setting target temp: 20.0
 
 For help, use --help
 ```bash
-python3 -m utils.cli --help
+eq3cli --help
 ```
