@@ -4,13 +4,17 @@ Support for eq3 Bluetooth Smart thermostats.
 All temperatures in Celsius.
 
 To get the current state, update() has to be called for powersaving reasons.
+Schedule needs to be requested with query_schedule() before accessing for similar reasons.
 """
 
 import logging
-from datetime import datetime, timedelta
+import struct
+import codecs
+from datetime import datetime, timedelta, time
 from enum import IntEnum
 
-import struct
+from construct import Struct, Adapter, Int8ub, Enum, Const, GreedyRange
+
 from .connection import BTLEConnection
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,6 +30,7 @@ PROP_ID_RETURN = 1
 PROP_INFO_QUERY = 3
 PROP_INFO_RETURN = 2
 PROP_COMFORT_ECO_CONFIG = 0x11
+PROP_OFFSET = 0x13
 PROP_WINDOW_OPEN_CONFIG = 0x14
 PROP_SCHEDULE_QUERY = 0x20
 PROP_SCHEDULE_RETURN = 0x21
@@ -47,6 +52,37 @@ BITMASK_BATTERY = 0x80
 
 EQ3BT_MIN_TEMP = 5.0
 EQ3BT_MAX_TEMP = 30.0
+
+NAME_TO_DAY = {"sat": 0, "sun": 1, "mon": 2, "tue": 3, "wed": 4, "thu": 5, "fri": 6}
+
+
+class TimeAdapter(Adapter):
+    """ Adapter to encode and decode schedule times. """
+    def _decode(self, obj, ctx):
+        h, m = divmod(obj * 10, 60)
+        if h == 24:  # HACK, can we do better?
+            h = 0
+        return time(hour=h, minute=m)
+
+    def _encode(self, obj, ctx):
+        # TODO: encode h == 24 hack
+        encoded = (obj.hour * 60 + obj.minute) / 10
+        return encoded
+
+class TempAdapter(Adapter):
+    """ Adapter to encode and decode temperature. """
+    def _decode(self, obj, ctx):
+        return obj / 2.0
+
+    def _encoed(self, obj, ctx):
+        return obj * 2.0
+
+Schedule = Struct("cmd" / Const(Int8ub, PROP_SCHEDULE_RETURN),
+                "day" / Enum(Int8ub, **NAME_TO_DAY),
+                "base_temp" / TempAdapter(Int8ub),
+                "next_change_at" / TimeAdapter(Int8ub),
+                "hours" / GreedyRange(Struct("target_temp" / TempAdapter(Int8ub), "next_change_at" / TimeAdapter(Int8ub)))
+)
 
 
 class Mode(IntEnum):
@@ -82,6 +118,8 @@ class Thermostat:
         self._mode = Mode.Unknown
         self._valve_state = Mode.Unknown
 
+        self._schedule = {}
+
         self._away_temp = 12.0
         self._away_duration = timedelta(days=30)
         self._away_end = None
@@ -107,11 +145,20 @@ class Thermostat:
             raise TemperatureException('Temperature {} out of range [{}, {}]'
                                        .format(temp, self.min_temp, self.max_temp))
 
+    def parse_schedule(self, data):
+        """Parses the device sent schedule."""
+        sched = Schedule.parse(data)
+        _LOGGER.debug("Got schedule data for day '%s'", sched.day)
+        #_LOGGER.debug(sched)
+
+        return sched
+
     def handle_notification(self, data):
         """Handle Callback from a Bluetooth (GATT) request."""
         _LOGGER.debug("Received notification from the device..")
         away_end = None
         if data[0] == PROP_INFO_RETURN:
+            _LOGGER.debug("Got status: %s" % codecs.encode(data, 'hex'))
             self._raw_mode = data[2]
             self._valve_state = data[3]
 
@@ -146,8 +193,12 @@ class Thermostat:
             _LOGGER.debug("Target temp: %s", self._target_temperature)
             _LOGGER.debug("Away end:    %s", self._away_end)
 
+        elif data[0] == PROP_SCHEDULE_RETURN:
+            parsed = self.parse_schedule(data)
+            self._schedule[parsed.day] = parsed
+
         else:
-            _LOGGER.debug("Unknown notification %s (%s)", data[0], data)
+            _LOGGER.debug("Unknown notification %s (%s)", data[0], codecs.encode(data, 'hex'))
 
     def update(self):
         """Update the data from the thermostat. Always sets the current time."""
@@ -159,6 +210,28 @@ class Thermostat:
 
         with self._conn as conn:
             conn.make_request(PROP_WRITE_HANDLE, value)
+
+    def query_schedule(self, day):
+        _LOGGER.debug("Querying schedule..")
+
+        if day < 0 or day > 6:
+            _LOGGER.error("Invalid day: %s", day)
+
+        value = struct.pack('BB', PROP_SCHEDULE_QUERY, day)
+
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
+
+    @property
+    def schedule(self):
+        """ Returns previously fetched schedule.
+         :return: Schedule structure or None if not fetched.
+         """
+        return self._schedule
+
+    def set_schedule(self, day, data):
+        """Sets the schedule for the given day. """
+        value = struct.pack('BB', PROP_SCHEDULE_QUERY, day) + Schedule.build(data)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
     def target_temperature(self):
@@ -285,6 +358,23 @@ class Thermostat:
         self._verify_temperature(eco)
         value = struct.pack('BBB', PROP_COMFORT_ECO_CONFIG, int(comfort * 2),
                             int(eco * 2))
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
+
+    def temperature_offset(self, offset):
+        """Sets the thermostat's temperature offset."""
+        _LOGGER.debug("Setting offset: %s", offset)
+        # [-3,5 .. 0  .. 3,5 ]
+        # [00   .. 07 .. 0e ]
+        if offset < -3.5 or offset > 3.5:
+            raise TemperatureException("Invalid value: %s" % offset)
+
+        current = -3.5
+        values = {}
+        for i in range(15):
+            values[current] = i
+            current += 0.5
+
+        value = struct.pack('BB', PROP_OFFSET, values[offset])
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     def activate_comfort(self):

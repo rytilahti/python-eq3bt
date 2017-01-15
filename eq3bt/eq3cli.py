@@ -105,6 +105,28 @@ def presets(dev, comfort, eco):
     click.echo("Setting presets: comfort %s, eco %s" % (comfort, eco))
     dev.temperature_presets(comfort, eco)
 
+@cli.command()
+@pass_dev
+def schedule(dev):
+    """ Gets the schedule from the thermostat. """
+    # TODO: expose setting the schedule somehow?
+    for d in range(7):
+        dev.query_schedule(d)
+    for day in dev.schedule.values():
+        click.echo("Day %s, base temp: %s" % (day.day, day.base_temp))
+        current_hour = day.next_change_at
+        for hour in day.hours:
+            if current_hour == 0: continue
+            click.echo("\t[%s-%s] %s" % (current_hour, hour.next_change_at, hour.target_temp))
+            current_hour = hour.next_change_at
+
+@cli.command()
+@click.argument('offset', type=float)
+@pass_dev
+def offset(dev, offset):
+    """ Sets the temperature offset [-3,5 3,5] """
+    click.echo("Setting the offset to %s" % offset)
+    dev.temperature_offset(offset)
 
 @cli.command()
 @click.pass_context
