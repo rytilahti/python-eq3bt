@@ -8,18 +8,18 @@ with support for more features and better device handling.
 # Features
 
 * Reading device status: locked, low battery, valve state, window open, target temperature, active mode
-* Writing settings: target temperature, auto mode presets
+* Writing settings: target temperature, auto mode presets, temperature offset
 * Setting the active mode: auto, manual, boost, away
 
 ## Not (yet) supported)
 
-* Reading presets
-* Changing schedules
+* Reading presets, temperature offset. This may not be possible.
+* No easy-to-use interface for setting schedules.
 
 # Installation
 
 ```bash
-pip install python-eq3bt```
+pip install python-eq3bt
 ```
 
 # Usage
@@ -33,12 +33,22 @@ thermostat.update()  # fetches data from the thermostat
 print(thermostat)
 ```
 
-"""
+<aside class="notice">
 Notice: The device in question has to be disconnected from bluetoothd, since BTLE devices can only hold one connection at a time.
 
 The library will try to connect to the device second time in case it wasn't successful in the first time,
 which can happen if you are running other applications connecting to the same thermostat.
-"""
+</aside>
+
+## Fetching schedule
+
+```
+from eq3bt import Thermostat
+
+thermostat = Thermostat('AB:CD:EF:12:34:45')
+thermostat.fetch_schedule()
+print(thermostat.schedule)
+```
 
 # Command-line tool
 
