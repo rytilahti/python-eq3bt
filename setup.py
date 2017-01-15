@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='python-eq3bt',
-    version='0.1.3',
+    version='0.1.4',
     packages=['eq3bt'],
     install_requires=['bluepy>=1.0.5', 'click', 'construct'],
     description='EQ3 bluetooth thermostat support library',
