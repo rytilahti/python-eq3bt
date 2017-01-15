@@ -15,7 +15,7 @@ setup(
     license="MIT",
     entry_points={
         'console_scripts': [
-            'eq3cli = utils.eq3cli:cli'
+            'eq3cli = eq3bt.eq3cli:cli'
         ]
     }
 )
