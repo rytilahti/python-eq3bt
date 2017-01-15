@@ -1,0 +1,98 @@
+Changelog
+=========
+
+0.1.3 (2017-01-15)
+------------------
+
+- Make eq3bt a module. [Teemu Rytilahti]
+
+- Update README. [Teemu Rytilahti]
+
+- Add scheduling and offset functionality. [Teemu Rytilahti]
+
+- Connection: pretty print messaging in hex. [Teemu Rytilahti]
+
+- Setup.py: fix console script location. [Teemu Rytilahti]
+
+0.1.2 (2017-01-14)
+------------------
+
+- Fix packaging, add click dependency, bump to 0.1.2. [Teemu Rytilahti]
+
+- Bump bluepy requirement to 1.0.5. [Teemu Rytilahti]
+
+0.1 (2017-01-14)
+----------------
+
+- Restructure bluepy_devices to python-eq3bt. [Teemu Rytilahti]
+
+  * Complete restructure of the library. All unnecessary and problematic parts are dropped.
+  * General cleaning up, making flake8 and pylint happy.
+  * Updated and documented cli tool, named eq3cli
+
+- Add contextmanager for connection to simplify connecting and
+  disconnecting. Calling writes on device will build and tear down the
+  connection automatically. [Teemu Rytilahti]
+
+- Eq3btsmart: do not try to connect on init, allows adding the component
+  to homeassistant even if the device is not connectable at the moment.
+  [Teemu Rytilahti]
+
+- Add eq3cli tool. [Teemu Rytilahti]
+
+  Included command-line tool can be used to control the device.
+  All current functionality is available through it, check updated README.md for usage.
+
+- Add logger to ease debugging. [Teemu Rytilahti]
+
+- Increase version to 0.3.0 for the enhaced eq3btsmart support. [Janne
+  Grunau]
+
+- Eq3btsmart: and support for the comfort and eco temperature presets.
+  [Janne Grunau]
+
+- Eq3btsmart: add a property for the low battery warning. [Janne Grunau]
+
+- Eq3btsmart: add support for the thermostat's operating lock. [Janne
+  Grunau]
+
+- Eq3btsmart: add window open mode configuration. [Janne Grunau]
+
+- Eq3btsmart: and property to check window open state. [Janne Grunau]
+
+- Eq3btsmart: report valve state. [Janne Grunau]
+
+- Eq3btsmart: control the supported modes of the thermostat. [Janne
+  Grunau]
+
+  The away mode is not really useful yet.
+
+- Eq3btsmart: verify that temperatures are in min/max range. [Janne
+  Grunau]
+
+- Eq3btsmart: fix the minimal and maximal temperatures. [Janne Grunau]
+
+  4.5 and 30 degree celsius have special meanings and can't be set
+  in 'auto' mode. 4.5 means off (valve closed even if the temperature
+  below 4.5 degress). 30 means on (valve permanently open even if the
+  temperature exceeds 30 degrees).
+
+- Eq3btsmart: the update request needs to include the full time. [Janne
+  Grunau]
+
+  Otherwise the thermostat can set a random time. Also fixes the format of
+  the set time request.
+
+- Initial update in eq3btsmart.py. [Markus Peter]
+
+- +travis. [Markus Peter]
+
+- Update README.md. [Markus Peter]
+
+- Create README.md. [Markus Peter]
+
+- Initial Commit Version 0.2.0. [Markus Peter]
+
+- Initial commit. [Markus Peter]
+
+
