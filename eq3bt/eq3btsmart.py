@@ -13,9 +13,8 @@ import codecs
 from datetime import datetime, timedelta, time
 from enum import IntEnum
 
-from construct import Struct, Adapter, Int8ub, Enum, Const, GreedyRange
-
 from .connection import BTLEConnection
+from .structures import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +41,8 @@ PROP_ECO = 0x44
 PROP_BOOST = 0x45
 PROP_LOCK = 0x80
 
+"""
+BITMASK_AUTO = 0x00
 BITMASK_MANUAL = 0x01
 BITMASK_AWAY = 0x02
 BITMASK_BOOST = 0x04
@@ -49,40 +50,11 @@ BITMASK_DST = 0x08
 BITMASK_WINDOW = 0x10
 BITMASK_LOCKED = 0x20
 BITMASK_BATTERY = 0x80
+"""
 
+EQ3BT_AWAY_TEMP = 12.0
 EQ3BT_MIN_TEMP = 5.0
 EQ3BT_MAX_TEMP = 30.0
-
-NAME_TO_DAY = {"sat": 0, "sun": 1, "mon": 2, "tue": 3, "wed": 4, "thu": 5, "fri": 6}
-
-
-class TimeAdapter(Adapter):
-    """ Adapter to encode and decode schedule times. """
-    def _decode(self, obj, ctx):
-        h, m = divmod(obj * 10, 60)
-        if h == 24:  # HACK, can we do better?
-            h = 0
-        return time(hour=h, minute=m)
-
-    def _encode(self, obj, ctx):
-        # TODO: encode h == 24 hack
-        encoded = (obj.hour * 60 + obj.minute) / 10
-        return encoded
-
-class TempAdapter(Adapter):
-    """ Adapter to encode and decode temperature. """
-    def _decode(self, obj, ctx):
-        return obj / 2.0
-
-    def _encoed(self, obj, ctx):
-        return obj * 2.0
-
-Schedule = Struct("cmd" / Const(Int8ub, PROP_SCHEDULE_RETURN),
-                "day" / Enum(Int8ub, **NAME_TO_DAY),
-                "base_temp" / TempAdapter(Int8ub),
-                "next_change_at" / TimeAdapter(Int8ub),
-                "hours" / GreedyRange(Struct("target_temp" / TempAdapter(Int8ub), "next_change_at" / TimeAdapter(Int8ub)))
-)
 
 
 class Mode(IntEnum):
@@ -120,7 +92,7 @@ class Thermostat:
 
         self._schedule = {}
 
-        self._away_temp = 12.0
+        self._away_temp = EQ3BT_AWAY_TEMP
         self._away_duration = timedelta(days=30)
         self._away_end = None
 
@@ -129,7 +101,7 @@ class Thermostat:
 
     def __str__(self):
         away_end = "no"
-        if self.mode == Mode.Away:
+        if self.away_end:
             away_end = "end: %s" % self._away_end
 
         return "[%s] Target %s (mode: %s, away: %s)" % (self._conn.mac,
@@ -157,25 +129,24 @@ class Thermostat:
         """Handle Callback from a Bluetooth (GATT) request."""
         _LOGGER.debug("Received notification from the device..")
         away_end = None
+
         if data[0] == PROP_INFO_RETURN:
             _LOGGER.debug("Got status: %s" % codecs.encode(data, 'hex'))
-            self._raw_mode = data[2]
-            self._valve_state = data[3]
+            status = Status.parse(data)
+            print(status)
 
-            self._target_temperature = data[5] / 2.0
+            self._raw_mode = status.mode
+            self._valve_state = status.valve
+            self._target_temperature = status.target_temp
 
-            if self._raw_mode & BITMASK_BOOST:
+            if status.mode.BOOST:
                 self._mode = Mode.Boost
-            elif self._raw_mode & BITMASK_AWAY:
+            elif status.mode.AWAY:
                 self._mode = Mode.Away
-                if len(data) == 10:
-                    year = 2000 + data[7]
-                    month = data[9]
-                    day = data[6]
-                    hour = data[8] >> 1
-                    minute = 30 * (data[8] & 1)
-                    away_end = datetime(year, month, day, hour, minute)
-            elif self._raw_mode & BITMASK_MANUAL:
+
+                self._away_end = status.away
+
+            elif status.mode.MANUAL:  # TODO: are these really used? in my manual mode I get temperature as usual.
                 if data[5] == EQ3BTSMART_OFF:
                     self._mode = Mode.Closed
                     self._target_temperature = Mode.Unknown
@@ -186,7 +157,6 @@ class Thermostat:
                     self._mode = Mode.Manual
             else:
                 self._mode = Mode.Auto
-            self._away_end = away_end
 
             _LOGGER.debug("Valve state: %s", self._valve_state)
             _LOGGER.debug("Mode:        %s", self.mode_readable)
@@ -208,8 +178,7 @@ class Thermostat:
                             time.year % 100, time.month, time.day,
                             time.hour, time.minute, time.second)
 
-        with self._conn as conn:
-            conn.make_request(PROP_WRITE_HANDLE, value)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     def query_schedule(self, day):
         _LOGGER.debug("Querying schedule..")
@@ -275,22 +244,40 @@ class Thermostat:
             self.boost = True
             return
         elif mode == Mode.Away:
-            mode_byte = 0x80 | int(self._away_temp * 2)
             end = datetime.now() + self._away_duration
-            away_end = struct.pack('BBBB', end.day, end.year % 100,
-                                   (end.hour * 2) | (end.minute >= 30),
-                                   end.month)
+            return self.set_away(end, self._away_temp)
         elif mode == Mode.Closed:
             mode_byte = 0x40 | EQ3BTSMART_OFF
         elif mode == Mode.Open:
             mode_byte = 0x40 | EQ3BTSMART_ON
         elif mode == Mode.Manual:
-            mode_byte = 0x40
+            return self.set_mode(0x40)
 
         value = struct.pack('BB', PROP_MODE_WRITE, mode_byte)
-        if away_end is not None:
-            value += away_end
 
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
+
+    @property
+    def away_end(self):
+        return self._away_end
+
+    def set_away(self, away_end=None, temperature=EQ3BT_AWAY_TEMP):
+        """ Sets away mode with target temperature.
+            When called without parameters disables away mode."""
+        if not away_end:
+            _LOGGER.debug("Disabling away, going to auto mode.")
+            return self.set_mode(0x00)
+
+        _LOGGER.debug("Setting away until %s, temp %s", away_end, temperature)
+        adapter = AwayDataAdapter(Byte[4])
+        packed = adapter.build(away_end)
+
+        self.set_mode(0x80 | int(temperature * 2), packed)
+
+    def set_mode(self, mode, payload=None):
+        value = struct.pack('BB', PROP_MODE_WRITE, mode)
+        if payload:
+            value += payload
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
@@ -319,7 +306,7 @@ class Thermostat:
     def window_open(self):
         """Returns True if the thermostat reports a open window
            (detected by sudden drop of temperature)"""
-        return self._raw_mode and bool(self._raw_mode & BITMASK_WINDOW)
+        return self._raw_mode and self._raw_mode.WINDOW
 
     def window_open_config(self, temperature, duration):
         """Configures the window open behavior. The duration is specified in
@@ -336,7 +323,7 @@ class Thermostat:
     @property
     def locked(self):
         """Returns True if the thermostat is locked."""
-        return self._raw_mode and bool(self._raw_mode & BITMASK_LOCKED)
+        return self._raw_mode and self._raw_mode.LOCKED
 
     @locked.setter
     def locked(self, lock):
@@ -348,7 +335,7 @@ class Thermostat:
     @property
     def low_battery(self):
         """Returns True if the thermostat reports a low battery."""
-        return self._raw_mode and bool(self._raw_mode & BITMASK_BATTERY)
+        return self._raw_mode and self._raw_mode.LOW_BATTERY
 
     def temperature_presets(self, comfort, eco):
         """Set the thermostats preset temperatures comfort (sun) and
@@ -405,22 +392,23 @@ class Thermostat:
     def decode_mode(mode):
         """Convert the numerical mode to a human-readable description."""
         ret = ""
-        if mode & BITMASK_MANUAL:
+
+        if mode.MANUAL:
             ret = "manual"
         else:
             ret = "auto"
 
-        if mode & BITMASK_AWAY:
+        if mode.AWAY:
             ret = ret + " holiday"
-        if mode & BITMASK_BOOST:
+        if mode.BOOST:
             ret = ret + " boost"
-        if mode & BITMASK_DST:
+        if mode.DST:
             ret = ret + " dst"
-        if mode & BITMASK_WINDOW:
+        if mode.WINDOW:
             ret = ret + " window"
-        if mode & BITMASK_LOCKED:
+        if mode.LOCKED:
             ret = ret + " locked"
-        if mode & BITMASK_BATTERY:
+        if mode.LOW_BATTERY:
             ret = ret + " low battery"
 
         return ret
