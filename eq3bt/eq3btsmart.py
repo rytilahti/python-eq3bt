@@ -397,6 +397,10 @@ class Thermostat:
         """Return the maximum temperature."""
         return EQ3BT_MAX_TEMP
 
+    @property
+    def away_end(self):
+        return self._away_end
+
     @staticmethod
     def decode_mode(mode):
         """Convert the numerical mode to a human-readable description."""
