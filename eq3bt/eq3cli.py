@@ -1,6 +1,7 @@
 """ Cli tool for testing connectivity with EQ3 smart thermostats. """
 import logging
 import click
+from click_datetime import Datetime
 
 from eq3bt import Thermostat
 
@@ -127,6 +128,17 @@ def offset(dev, offset):
     """ Sets the temperature offset [-3,5 3,5] """
     click.echo("Setting the offset to %s" % offset)
     dev.temperature_offset(offset)
+
+@cli.command()
+@click.argument('away_end', type=Datetime(format='%Y-%m-%d %H:%M'), default=None, required=False)
+@click.argument('temperature', type=float, default=None, required=False)
+@pass_dev
+def away(dev, away_end, temperature):
+    if away_end:
+        click.echo("Setting away until %s, temperature: %s" % (away_end, temperature))
+    else:
+        click.echo("Disabling away mode")
+    dev.set_away(away_end, temperature)
 
 @cli.command()
 @click.pass_context
