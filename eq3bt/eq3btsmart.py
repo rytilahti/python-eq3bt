@@ -18,9 +18,6 @@ from .structures import *
 
 _LOGGER = logging.getLogger(__name__)
 
-EQ3BTSMART_OFF = 0x09
-EQ3BTSMART_ON = 0x3c
-
 PROP_WRITE_HANDLE = 0x411
 PROP_NTFY_HANDLE = 0x421
 
@@ -55,6 +52,8 @@ BITMASK_BATTERY = 0x80
 EQ3BT_AWAY_TEMP = 12.0
 EQ3BT_MIN_TEMP = 5.0
 EQ3BT_MAX_TEMP = 30.0
+EQ3BT_OFF_TEMP = 4.5
+EQ3BT_ON_TEMP = 30.0
 
 
 class Mode(IntEnum):
@@ -86,9 +85,9 @@ class Thermostat:
         """Initialize the thermostat."""
 
         self._target_temperature = Mode.Unknown
-        self._raw_mode = Mode.Unknown
         self._mode = Mode.Unknown
         self._valve_state = Mode.Unknown
+        self._raw_mode = None
 
         self._schedule = {}
 
@@ -128,12 +127,11 @@ class Thermostat:
     def handle_notification(self, data):
         """Handle Callback from a Bluetooth (GATT) request."""
         _LOGGER.debug("Received notification from the device..")
-        away_end = None
 
         if data[0] == PROP_INFO_RETURN:
             _LOGGER.debug("Got status: %s" % codecs.encode(data, 'hex'))
             status = Status.parse(data)
-            print(status)
+            _LOGGER.debug("Parsed status: %s", status)
 
             self._raw_mode = status.mode
             self._valve_state = status.valve
@@ -143,16 +141,12 @@ class Thermostat:
                 self._mode = Mode.Boost
             elif status.mode.AWAY:
                 self._mode = Mode.Away
-
                 self._away_end = status.away
-
-            elif status.mode.MANUAL:  # TODO: are these really used? in my manual mode I get temperature as usual.
-                if data[5] == EQ3BTSMART_OFF:
+            elif status.mode.MANUAL:
+                if status.target_temp < EQ3BT_MIN_TEMP:
                     self._mode = Mode.Closed
-                    self._target_temperature = Mode.Unknown
-                elif data[5] == EQ3BTSMART_ON:
+                elif status.target_temp >= EQ3BT_MAX_TEMP:
                     self._mode = Mode.Open
-                    self._target_temperature = Mode.Unknown
                 else:
                     self._mode = Mode.Manual
             else:
@@ -205,8 +199,6 @@ class Thermostat:
     @property
     def target_temperature(self):
         """Return the temperature we try to reach."""
-        if self._mode in MODE_NOT_TEMP:
-            return None
 
         return self._target_temperature
 
@@ -215,9 +207,6 @@ class Thermostat:
         """Set new target temperature."""
         _LOGGER.debug("Setting new target temperature: %s", temperature)
         self._verify_temperature(temperature)
-        if self._mode in MODE_NOT_TEMP:
-            _LOGGER.warning("Tried to set temperature when in mode %s, bailing out", self._mode)
-            return
         value = struct.pack('BB', PROP_TEMPERATURE_WRITE, int(temperature * 2))
         # Returns INFO_QUERY, so use that
 
@@ -226,9 +215,6 @@ class Thermostat:
     @property
     def mode(self):
         """Return the current operation mode"""
-        if self._mode in MODE_NOT_TEMP:
-            return None
-
         return self._mode
 
     @mode.setter
@@ -247,11 +233,11 @@ class Thermostat:
             end = datetime.now() + self._away_duration
             return self.set_away(end, self._away_temp)
         elif mode == Mode.Closed:
-            mode_byte = 0x40 | EQ3BTSMART_OFF
+            self.target_temperature = EQ3BT_OFF_TEMP
         elif mode == Mode.Open:
-            mode_byte = 0x40 | EQ3BTSMART_ON
+            self.target_temperature = EQ3BT_ON_TEMP
         elif mode == Mode.Manual:
-            return self.set_mode(0x40)
+            return self.set_mode(0x40)  # TODO: which temp to set?!
 
         value = struct.pack('BB', PROP_MODE_WRITE, mode_byte)
 
@@ -283,7 +269,34 @@ class Thermostat:
     @property
     def mode_readable(self):
         """Return a readable representation of the mode.."""
-        return self.decode_mode(self._raw_mode)
+        ret = ""
+        mode = self._raw_mode
+
+        if mode.MANUAL:
+            ret = "manual"
+            if self.target_temperature < self.min_temp:
+                ret += " off"
+            elif self.target_temperature >= self.max_temp:
+                ret += " on"
+            else:
+                ret += " (%sC)" % self.target_temperature
+        else:
+            ret = "auto"
+
+        if mode.AWAY:
+            ret = ret + " holiday"
+        if mode.BOOST:
+            ret = ret + " boost"
+        if mode.DST:
+            ret = ret + " dst"
+        if mode.WINDOW:
+            ret = ret + " window"
+        if mode.LOCKED:
+            ret = ret + " locked"
+        if mode.LOW_BATTERY:
+            ret = ret + " low battery"
+
+        return ret
 
     @property
     def boost(self):
@@ -387,28 +400,3 @@ class Thermostat:
     @property
     def away_end(self):
         return self._away_end
-
-    @staticmethod
-    def decode_mode(mode):
-        """Convert the numerical mode to a human-readable description."""
-        ret = ""
-
-        if mode.MANUAL:
-            ret = "manual"
-        else:
-            ret = "auto"
-
-        if mode.AWAY:
-            ret = ret + " holiday"
-        if mode.BOOST:
-            ret = ret + " boost"
-        if mode.DST:
-            ret = ret + " dst"
-        if mode.WINDOW:
-            ret = ret + " window"
-        if mode.LOCKED:
-            ret = ret + " locked"
-        if mode.LOW_BATTERY:
-            ret = ret + " low battery"
-
-        return ret
