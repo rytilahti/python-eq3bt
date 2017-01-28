@@ -38,17 +38,6 @@ PROP_ECO = 0x44
 PROP_BOOST = 0x45
 PROP_LOCK = 0x80
 
-"""
-BITMASK_AUTO = 0x00
-BITMASK_MANUAL = 0x01
-BITMASK_AWAY = 0x02
-BITMASK_BOOST = 0x04
-BITMASK_DST = 0x08
-BITMASK_WINDOW = 0x10
-BITMASK_LOCKED = 0x20
-BITMASK_BATTERY = 0x80
-"""
-
 EQ3BT_AWAY_TEMP = 12.0
 EQ3BT_MIN_TEMP = 5.0
 EQ3BT_MAX_TEMP = 30.0
@@ -120,7 +109,6 @@ class Thermostat:
         """Parses the device sent schedule."""
         sched = Schedule.parse(data)
         _LOGGER.debug("Got schedule data for day '%s'", sched.day)
-        #_LOGGER.debug(sched)
 
         return sched
 
@@ -199,16 +187,18 @@ class Thermostat:
     @property
     def target_temperature(self):
         """Return the temperature we try to reach."""
-
         return self._target_temperature
 
     @target_temperature.setter
     def target_temperature(self, temperature):
         """Set new target temperature."""
-        _LOGGER.debug("Setting new target temperature: %s", temperature)
         self._verify_temperature(temperature)
-        value = struct.pack('BB', PROP_TEMPERATURE_WRITE, int(temperature * 2))
-        # Returns INFO_QUERY, so use that
+        dev_temp = int(temperature * 2)
+        if temperature == EQ3BT_OFF_TEMP or temperature == EQ3BT_ON_TEMP:
+            dev_temp |= 0x40
+            value = struct.pack('BB', PROP_MODE_WRITE, dev_temp)
+        else:
+            value = struct.pack('BB', PROP_TEMPERATURE_WRITE, dev_temp)
 
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
@@ -234,10 +224,12 @@ class Thermostat:
             return self.set_away(end, self._away_temp)
         elif mode == Mode.Closed:
             self.target_temperature = EQ3BT_OFF_TEMP
+            return
         elif mode == Mode.Open:
             self.target_temperature = EQ3BT_ON_TEMP
+            return
         elif mode == Mode.Manual:
-            return self.set_mode(0x40)  # TODO: which temp to set?!
+            return self.set_mode(0x40 | int(self._target_temperature*2))
 
         value = struct.pack('BB', PROP_MODE_WRITE, mode_byte)
 
@@ -284,17 +276,17 @@ class Thermostat:
             ret = "auto"
 
         if mode.AWAY:
-            ret = ret + " holiday"
+            ret += " holiday"
         if mode.BOOST:
-            ret = ret + " boost"
+            ret += " boost"
         if mode.DST:
-            ret = ret + " dst"
+            ret += " dst"
         if mode.WINDOW:
-            ret = ret + " window"
+            ret += " window"
         if mode.LOCKED:
-            ret = ret + " locked"
+            ret += " locked"
         if mode.LOW_BATTERY:
-            ret = ret + " low battery"
+            ret += " low battery"
 
         return ret
 
@@ -390,7 +382,7 @@ class Thermostat:
     @property
     def min_temp(self):
         """Return the minimum temperature."""
-        return EQ3BT_MIN_TEMP
+        return EQ3BT_OFF_TEMP
 
     @property
     def max_temp(self):

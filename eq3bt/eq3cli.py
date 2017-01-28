@@ -134,6 +134,7 @@ def offset(dev, offset):
 @click.argument('temperature', type=float, default=None, required=False)
 @pass_dev
 def away(dev, away_end, temperature):
+    """ Enables or disables the away mode. """
     if away_end:
         click.echo("Setting away until %s, temperature: %s" % (away_end, temperature))
     else:
