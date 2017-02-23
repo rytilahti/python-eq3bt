@@ -1,6 +1,7 @@
 """ Cli tool for testing connectivity with EQ3 smart thermostats. """
 import logging
 import click
+import re
 from click_datetime import Datetime
 
 from eq3bt import Thermostat
@@ -8,8 +9,13 @@ from eq3bt import Thermostat
 pass_dev = click.make_pass_decorator(Thermostat)
 
 
+def validate_mac(ctx, param, mac):
+    if re.match('^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$', mac) is None:
+        raise click.BadParameter(mac + ' is no valid mac address')
+    return mac
+
 @click.group(invoke_without_command=True)
-@click.option('--mac', envvar="EQ3_MAC")
+@click.option('--mac', envvar="EQ3_MAC", required=True, callback=validate_mac)
 @click.option('--debug/--normal', default=False)
 @click.pass_context
 def cli(ctx, mac, debug):
