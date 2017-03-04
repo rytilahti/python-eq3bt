@@ -75,4 +75,4 @@ class BTLEConnection(btle.DefaultDelegate):
                     _LOGGER.debug("Waiting for notifications for %s", timeout)
                     self._conn.waitForNotifications(timeout)
         except btle.BTLEException as ex:
-            _LOGGER.error("Got btle exception: %s", ex, exc_info=True)
+            _LOGGER.error("Got exception from bluepy while making a request: %s", ex)
