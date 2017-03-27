@@ -227,7 +227,9 @@ class Thermostat:
             return self.set_mode(0x40 | int(EQ3BT_ON_TEMP * 2))
 
         if mode == Mode.Manual:
-            return self.set_mode(0x40 | int(self._target_temperature*2))
+            temperature = max(min(self._target_temperature, self.max_temp),
+                              self.min_temp)
+            return self.set_mode(0x40 | int(temperature * 2))
         else:
             return self.set_mode(0)
 
