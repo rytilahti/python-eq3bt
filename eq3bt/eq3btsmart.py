@@ -211,8 +211,7 @@ class Thermostat:
     def mode(self, mode):
         """Set the operation mode."""
         _LOGGER.debug("Setting new mode: %s", mode)
-        mode_byte = 0
-        away_end = None
+
         if self.mode == Mode.Boost and mode != Mode.Boost:
             self.boost = False
 
@@ -228,12 +227,11 @@ class Thermostat:
         elif mode == Mode.Open:
             self.target_temperature = EQ3BT_ON_TEMP
             return
-        elif mode == Mode.Manual:
+
+        if mode == Mode.Manual:
             return self.set_mode(0x40 | int(self._target_temperature*2))
-
-        value = struct.pack('BB', PROP_MODE_WRITE, mode_byte)
-
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        else:
+            return self.set_mode(0)
 
     @property
     def away_end(self):
