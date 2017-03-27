@@ -40,7 +40,7 @@ PROP_LOCK = 0x80
 
 EQ3BT_AWAY_TEMP = 12.0
 EQ3BT_MIN_TEMP = 5.0
-EQ3BT_MAX_TEMP = 30.0
+EQ3BT_MAX_TEMP = 29.5
 EQ3BT_OFF_TEMP = 4.5
 EQ3BT_ON_TEMP = 30.0
 
@@ -131,9 +131,9 @@ class Thermostat:
                 self._mode = Mode.Away
                 self._away_end = status.away
             elif status.mode.MANUAL:
-                if status.target_temp < EQ3BT_MIN_TEMP:
+                if status.target_temp == EQ3BT_OFF_TEMP:
                     self._mode = Mode.Closed
-                elif status.target_temp >= EQ3BT_MAX_TEMP:
+                elif status.target_temp == EQ3BT_ON_TEMP:
                     self._mode = Mode.Open
                 else:
                     self._mode = Mode.Manual
@@ -192,12 +192,12 @@ class Thermostat:
     @target_temperature.setter
     def target_temperature(self, temperature):
         """Set new target temperature."""
-        self._verify_temperature(temperature)
         dev_temp = int(temperature * 2)
         if temperature == EQ3BT_OFF_TEMP or temperature == EQ3BT_ON_TEMP:
             dev_temp |= 0x40
             value = struct.pack('BB', PROP_MODE_WRITE, dev_temp)
         else:
+            self._verify_temperature(temperature)
             value = struct.pack('BB', PROP_TEMPERATURE_WRITE, dev_temp)
 
         self._conn.make_request(PROP_WRITE_HANDLE, value)
@@ -222,11 +222,9 @@ class Thermostat:
             end = datetime.now() + self._away_duration
             return self.set_away(end, self._away_temp)
         elif mode == Mode.Closed:
-            self.target_temperature = EQ3BT_OFF_TEMP
-            return
+            return self.set_mode(0x40 | int(EQ3BT_OFF_TEMP * 2))
         elif mode == Mode.Open:
-            self.target_temperature = EQ3BT_ON_TEMP
-            return
+            return self.set_mode(0x40 | int(EQ3BT_ON_TEMP * 2))
 
         if mode == Mode.Manual:
             return self.set_mode(0x40 | int(self._target_temperature*2))
@@ -380,7 +378,7 @@ class Thermostat:
     @property
     def min_temp(self):
         """Return the minimum temperature."""
-        return EQ3BT_OFF_TEMP
+        return EQ3BT_MIN_TEMP
 
     @property
     def max_temp(self):
