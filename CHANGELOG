@@ -1,6 +1,36 @@
 Changelog
 =========
 
+0.1.6 (2017-04-01)
+------------------------
+
+- Version 0.1.6. [Teemu Rytilahti]
+
+- Use debug logging for the first round of connection error. [Teemu
+  Rytilahti]
+
+- Disallow running with python versions older than 3.4. [Teemu
+  Rytilahti]
+
+  The library _may_ still be python2 compatible though for now,
+  but this is unsupported and should not be relied on.
+
+- On/Off/Manual mode fixes (#6) [Janne Grunau]
+
+  * Handle On/Off mode correctly
+
+  * Set temperature in [EQ3BT_MIN_TEMP, EQ3BT_MAX_TEMP] for manual mode
+
+  * simplify mode setter function
+
+- Be less noisy on connection errors. [Teemu Rytilahti]
+
+- Require and validate mac address at the cli (#4) [Klemens Schölhorn]
+
+- Add missing structures.py. this was already in pypi package, so no
+  harm done. [Teemu Rytilahti]
+
+
 0.1.5 (2017-01-28)
 ------------------------
 
