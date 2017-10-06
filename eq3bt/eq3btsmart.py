@@ -116,7 +116,7 @@ class Thermostat:
         """Handle Callback from a Bluetooth (GATT) request."""
         _LOGGER.debug("Received notification from the device..")
 
-        if data[0] == PROP_INFO_RETURN:
+        if data[0] == PROP_INFO_RETURN and data[1] == 1:
             _LOGGER.debug("Got status: %s" % codecs.encode(data, 'hex'))
             status = Status.parse(data)
             _LOGGER.debug("Parsed status: %s", status)
@@ -179,9 +179,9 @@ class Thermostat:
          """
         return self._schedule
 
-    def set_schedule(self, day, data):
+    def set_schedule(self, data):
         """Sets the schedule for the given day. """
-        value = struct.pack('BB', PROP_SCHEDULE_QUERY, day) + Schedule.build(data)
+        value = Schedule.build(data)
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property

@@ -5,9 +5,11 @@ from datetime import datetime, time
 from math import floor
 
 PROP_INFO_RETURN = 2
+PROP_SCHEDULE_SET = 0x10
 PROP_SCHEDULE_RETURN = 0x21
 
 NAME_TO_DAY = {"sat": 0, "sun": 1, "mon": 2, "tue": 3, "wed": 4, "thu": 5, "fri": 6}
+NAME_TO_CMD = {"write": PROP_SCHEDULE_SET, "response": PROP_SCHEDULE_RETURN}
 HOUR_24_PLACEHOLDER=1234
 
 
@@ -22,7 +24,7 @@ class TimeAdapter(Adapter):
     def _encode(self, obj, ctx):
         # TODO: encode h == 24 hack
         if obj == HOUR_24_PLACEHOLDER:
-            return 24 * 60 / 10
+            return int(24 * 60 / 10)
 
         encoded = int((obj.hour * 60 + obj.minute) / 10)
 
@@ -83,7 +85,7 @@ Status = "Status" / Struct(
                 "away" / IfThenElse(lambda ctx: ctx.mode.AWAY, AwayDataAdapter(Bytes(4)), GreedyBytes))
 
 Schedule = "Schedule" / Struct(
-                  "cmd" / Const(Int8ub, PROP_SCHEDULE_RETURN),
+                  "cmd" / Enum(Int8ub, **NAME_TO_CMD),
                   "day" / Enum(Int8ub, **NAME_TO_DAY),
                   "base_temp" / TempAdapter(Int8ub),
                   "next_change_at" / TimeAdapter(Int8ub),
