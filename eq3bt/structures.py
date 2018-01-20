@@ -76,11 +76,11 @@ class AwayDataAdapter(Adapter):
 
 
 Status = "Status" / Struct(
-                "cmd" / Const(Int8ub, PROP_INFO_RETURN),
-                Const(Int8ub, 0x01),
+                "cmd" / Const(PROP_INFO_RETURN, Int8ub),
+                Const(0x01, Int8ub),
                 "mode" / ModeFlags,
                 "valve" / Int8ub,
-                Const(Int8ub, 0x04),
+                Const(0x04, Int8ub),
                 "target_temp" / TempAdapter(Int8ub),
                 "away" / IfThenElse(lambda ctx: ctx.mode.AWAY, AwayDataAdapter(Bytes(4)), GreedyBytes))
 
