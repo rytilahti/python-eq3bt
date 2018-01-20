@@ -42,11 +42,14 @@ which can happen if you are running other applications connecting to the same th
 
 ## Fetching schedule
 
+The schedule is queried per day basis and the cached information can be
+accessed through `schedule` property..
+
 ```
 from eq3bt import Thermostat
 
 thermostat = Thermostat('AB:CD:EF:12:34:45')
-thermostat.fetch_schedule()
+thermostat.query_schedule(0)
 print(thermostat.schedule)
 ```
 
