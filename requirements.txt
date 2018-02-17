@@ -1,4 +1,4 @@
 bluepy>=1.0.5
 click
-construct
+construct==2.9.29
 click-datetime
