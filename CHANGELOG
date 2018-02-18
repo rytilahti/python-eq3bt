@@ -1,6 +1,26 @@
 Changelog
 =========
 
+0.1.9 (2018-02-18)
+------------------------
+
+- Update to the new construct API (#20) [Arkadiusz Bulski]
+
+
+0.1.8 (2018-01-20)
+------------------
+
+- Update to work with the newest construct release, bump version. [Teemu
+  Rytilahti]
+
+- Update schedule example, fixes #15. [Teemu Rytilahti]
+
+- Do not suppress exceptions from bluepy, but log them to debug logger
+  and raise exceptions for users to handle. [Teemu Rytilahti]
+
+- Install flake8 and pylint, which are required for the travis build.
+  [Teemu Rytilahti]
+
 0.1.7 (2017-10-06)
 ------------------------
 - Fixed setting schedule not working (#9) [horsitis
