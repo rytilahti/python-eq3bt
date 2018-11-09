@@ -158,14 +158,14 @@ def state(ctx):
     """ Prints out all available information. """
     dev = ctx.obj
     click.echo(dev)
-    ctx.invoke(locked, ctx)
-    ctx.invoke(low_battery, ctx)
-    ctx.invoke(window_open, ctx)
-    ctx.invoke(boost, ctx)
-    ctx.invoke(temp, ctx)
-    # ctx.invoke(presets, ctx)
-    ctx.invoke(mode, ctx)
-    ctx.invoke(valve_state, ctx)
+    ctx.forward(locked)
+    ctx.forward(low_battery)
+    ctx.forward(window_open)
+    ctx.forward(boost)
+    ctx.forward(temp)
+    # ctx.forward(presets)
+    ctx.forward(mode)
+    ctx.forward(valve_state)
 
 
 if __name__ == "__main__":
