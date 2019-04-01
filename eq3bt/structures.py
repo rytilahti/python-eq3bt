@@ -1,8 +1,7 @@
 """ Contains construct adapters and structures. """
-from construct import Struct, Adapter, ExprAdapter, Int8ub, Enum, FlagsEnum, Const, Pass, GreedyRange, GreedyBytes, IfThenElse, If, Bytes, Byte
-import struct
-from datetime import datetime, time
-from math import floor
+from construct import (Struct, Adapter, Int8ub, Enum, FlagsEnum, Const,
+                       GreedyRange, IfThenElse, Bytes, Optional)
+from datetime import datetime, time, timedelta
 
 PROP_INFO_RETURN = 2
 PROP_SCHEDULE_SET = 0x10
@@ -35,6 +34,31 @@ class TempAdapter(Adapter):
 
     def _encode(self, obj, ctx, path):
         return int(obj * 2.0)
+
+
+class WindowOpenTimeAdapter(Adapter):
+    """ Adapter to encode and decode window open times (5 min increments). """
+    def _decode(self, obj, context, path):
+        return timedelta(minutes=float(obj * 5.0))
+
+    def _encode(self, obj, context, path):
+        if isinstance(obj, timedelta):
+            obj = obj.seconds
+        if 0 <= obj <= 3600.0:
+            return int(obj / 300.0)
+        raise ValueError("Window open time must be between 0 and 60 minutes in intervals of 5 minutes.")
+
+
+class TempOffsetAdapter(Adapter):
+    """ Adapter to encode and decode the temperature offset. """
+    def _decode(self, obj, context, path):
+        return float((obj - 7) / 2.0)
+
+    def _encode(self, obj, context, path):
+        if -3.5 <= obj <= 3.5:
+            return int(obj * 2.0) + 7
+        raise ValueError("Temperature offset must be between -3.5 and 3.5 (in intervals of 0.5).")
+
 
 ModeFlags = "ModeFlags" / FlagsEnum(Int8ub,
                                     AUTO=0x00, # always True, doesnt affect building
@@ -78,9 +102,16 @@ Status = "Status" / Struct(
     "valve" / Int8ub,
     Const(0x04, Int8ub),
     "target_temp" / TempAdapter(Int8ub),
-    "away" / IfThenElse(lambda ctx: ctx.mode.AWAY, 
-        AwayDataAdapter(Byte[4]),
-        GreedyBytes),
+    "away" / IfThenElse(lambda ctx: ctx.mode.AWAY,
+                        AwayDataAdapter(Bytes(4)),
+                        Optional(Bytes(4))),
+    "presets" / Optional(Struct(
+        "window_open_temp" / TempAdapter(Int8ub),
+        "window_open_time" / WindowOpenTimeAdapter(Int8ub),
+        "comfort_temp" / TempAdapter(Int8ub),
+        "eco_temp" / TempAdapter(Int8ub),
+        "offset" / TempOffsetAdapter(Int8ub),
+    ))
 )
 
 Schedule = "Schedule" / Struct(
