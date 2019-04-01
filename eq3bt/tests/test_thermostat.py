@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import codecs
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from eq3bt import Thermostat, TemperatureException
 from eq3bt.eq3btsmart import (PROP_NTFY_HANDLE, PROP_ID_QUERY,
@@ -17,6 +17,7 @@ STATUS_RESPONSES = {
     'boost': b'020104000428',
     'low_batt': b'020180000428',
     'valve_at_22': b'020100160428',
+    'presets': b'020100000422000000001803282207',
 }
 
 
@@ -94,6 +95,16 @@ class TestThermostat(TestCase):
         th.update()
         self.assertTrue(th.boost)
         self.assertEqual(th.mode, Mode.Boost)
+
+    def test_presets(self):
+        th = self.thermostat
+        self.thermostat._conn.set_status('presets')
+        self.thermostat.update()
+        self.assertEqual(th.window_open_temperature, 12.0)
+        self.assertEqual(th.window_open_time, timedelta(minutes=15.0))
+        self.assertEqual(th.comfort_temperature, 20.0)
+        self.assertEqual(th.eco_temperature, 17.0)
+        self.assertEqual(th.temperature_offset, 0)
 
     def test_query_schedule(self):
         self.fail()

@@ -80,6 +80,12 @@ class Thermostat:
 
         self._schedule = {}
 
+        self._window_open_temperature = Mode.Unknown
+        self._window_open_time = Mode.Unknown
+        self._comfort_temperature = Mode.Unknown
+        self._eco_temperature = Mode.Unknown
+        self._temperature_offset = Mode.Unknown
+
         self._away_temp = EQ3BT_AWAY_TEMP
         self._away_duration = timedelta(days=30)
         self._away_end = None
@@ -139,6 +145,14 @@ class Thermostat:
                     self._mode = Mode.Manual
             else:
                 self._mode = Mode.Auto
+
+            presets = status.presets
+            if presets:
+                self._window_open_temperature = presets.window_open_temp
+                self._window_open_time = presets.window_open_time
+                self._comfort_temperature = presets.comfort_temp
+                self._eco_temperature = presets.eco_temp
+                self._temperature_offset = presets.offset
 
             _LOGGER.debug("Valve state: %s", self._valve_state)
             _LOGGER.debug("Mode:        %s", self.mode_readable)
@@ -324,6 +338,30 @@ class Thermostat:
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
+    def window_open_temperature(self):
+        """The temperature to set when an open window is detected."""
+        return self._window_open_temperature
+
+    @window_open_temperature.setter
+    def window_open_temperature(self, value):
+        if self._window_open_time == Mode.Unknown:
+            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
+        self.window_open_config(value, self._window_open_time)
+
+    @property
+    def window_open_time(self):
+        """Timeout to reset the thermostat after an open window is detected."""
+        return self._window_open_time
+
+    @window_open_time.setter
+    def window_open_time(self, value):
+        if self._window_open_temperature == Mode.Unknown:
+            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
+        if not isinstance(value, timedelta):
+            value = timedelta(minutes=value)
+        self.window_open_config(self.window_open_temperature, value)
+
+    @property
     def locked(self):
         """Returns True if the thermostat is locked."""
         return self._raw_mode and self._raw_mode.LOCKED
@@ -350,6 +388,34 @@ class Thermostat:
                             int(eco * 2))
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
+    @property
+    def comfort_temperature(self):
+        """The comfort temperature preset of the thermostat."""
+        return self._comfort_temperature
+
+    @comfort_temperature.setter
+    def comfort_temperature(self, value):
+        if self._eco_temperature == Mode.Unknown:
+            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
+        self.temperature_presets(value, self._eco_temperature)
+
+    @property
+    def eco_temperature(self):
+        """The eco temperature preset of the thermostat."""
+        return self._eco_temperature
+
+    @eco_temperature.setter
+    def eco_temperature(self, value):
+        if self._comfort_temperature == Mode.Unknown:
+            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
+        self.temperature_presets(self._comfort_temperature, value)
+
+    @property
+    def temperature_offset(self):
+        """Returns the thermostat's temperature offset."""
+        return self._temperature_offset
+
+    @temperature_offset.setter
     def temperature_offset(self, offset):
         """Sets the thermostat's temperature offset."""
         _LOGGER.debug("Setting offset: %s", offset)
