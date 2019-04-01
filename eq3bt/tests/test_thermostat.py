@@ -67,6 +67,11 @@ class TestThermostat(TestCase):
     def test_handle_notification(self):
         self.fail()
 
+    def test_query_id(self):
+        self.thermostat.query_id()
+        self.assertEqual(self.thermostat.firmware_version, 120)
+        self.assertEqual(self.thermostat.device_serial, "PEQ2130075")
+
     def test_update(self):
         th = self.thermostat
 

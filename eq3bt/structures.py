@@ -73,6 +73,7 @@ class AwayDataAdapter(Adapter):
 
 
 class DeviceSerialAdapter(Adapter):
+    """ Adapter to decode the device serial number. """
     def _decode(self, obj, context, path):
         return bytearray(n - 0x30
                          for n in obj).decode()
@@ -104,8 +105,8 @@ Schedule = "Schedule" / Struct(
 DeviceId = "DeviceId" / Struct(
     "cmd" / Const(PROP_ID_RETURN, Int8ub),
     "version" / Int8ub,
-    Const(0x00, Int8ub),
-    Const(0x00, Int8ub),
+    Int8ub,
+    Int8ub,
     "serial" / DeviceSerialAdapter(Bytes(10)),
     Int8ub,
 )
