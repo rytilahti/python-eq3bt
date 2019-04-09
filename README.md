@@ -10,10 +10,10 @@ with support for more features and better device handling.
 * Reading device status: locked, low battery, valve state, window open, target temperature, active mode
 * Writing settings: target temperature, auto mode presets, temperature offset
 * Setting the active mode: auto, manual, boost, away
+* Reading presets and temperature offset in more recent firmware versions.
 
 ## Not (yet) supported)
 
-* Reading presets, temperature offset. This may not be possible.
 * No easy-to-use interface for setting schedules.
 
 # Installation
@@ -70,8 +70,12 @@ eq3cli
 Locked: False
 Batter low: False
 Window open: False
+Window open temp: 12.0
+Window open time: 0:15:00
 Boost: False
 Current target temp: 17.0
+Current comfort temp: 20.0
+Current eco temp: 17.0
 Current mode: auto dst locked
 Valve: 0
 ```
