@@ -348,24 +348,10 @@ class Thermostat:
         """The temperature to set when an open window is detected."""
         return self._window_open_temperature
 
-    @window_open_temperature.setter
-    def window_open_temperature(self, value):
-        if self._window_open_time is None:
-            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
-        self.window_open_config(value, self._window_open_time)
-
     @property
     def window_open_time(self):
         """Timeout to reset the thermostat after an open window is detected."""
         return self._window_open_time
-
-    @window_open_time.setter
-    def window_open_time(self, value):
-        if self._window_open_temperature is None:
-            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
-        if not isinstance(value, timedelta):
-            value = timedelta(minutes=value)
-        self.window_open_config(self.window_open_temperature, value)
 
     @property
     def locked(self):
@@ -396,25 +382,13 @@ class Thermostat:
 
     @property
     def comfort_temperature(self):
-        """The comfort temperature preset of the thermostat."""
+        """Returns the comfort temperature preset of the thermostat."""
         return self._comfort_temperature
-
-    @comfort_temperature.setter
-    def comfort_temperature(self, value):
-        if self._eco_temperature is None:
-            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
-        self.temperature_presets(value, self._eco_temperature)
 
     @property
     def eco_temperature(self):
-        """The eco temperature preset of the thermostat."""
+        """Returns the eco temperature preset of the thermostat."""
         return self._eco_temperature
-
-    @eco_temperature.setter
-    def eco_temperature(self, value):
-        if self._comfort_temperature is None:
-            raise ValueError("Presets cannot be read. Please try updating the device firmware.")
-        self.temperature_presets(self._comfort_temperature, value)
 
     @property
     def temperature_offset(self):
