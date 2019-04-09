@@ -404,10 +404,6 @@ class Thermostat:
         return EQ3BT_MAX_TEMP
 
     @property
-    def away_end(self):
-        return self._away_end
-
-    @property
     def firmware_version(self):
         """Return the firmware version."""
         return self._firmware_version
