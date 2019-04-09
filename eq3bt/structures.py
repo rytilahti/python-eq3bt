@@ -1,6 +1,6 @@
 """ Contains construct adapters and structures. """
-from construct import (Struct, Adapter, Int8ub, Enum, FlagsEnum, Const, GreedyRange, GreedyBytes, IfThenElse,
-                       Bytes, Byte)
+from construct import (Struct, Adapter, Int8ub, Enum, FlagsEnum, Const,
+                       GreedyRange, GreedyBytes, IfThenElse, Bytes, Byte)
 from datetime import datetime, time
 
 

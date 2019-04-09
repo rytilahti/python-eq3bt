@@ -158,12 +158,11 @@ class Thermostat:
             self._firmware_version = parsed.version
             self._device_serial = parsed.serial
 
-
         else:
             _LOGGER.debug("Unknown notification %s (%s)", data[0], codecs.encode(data, 'hex'))
 
     def query_id(self):
-        """Query basic device information such as the firmware and device serial number."""
+        """Query device identification information, e.g. the serial number."""
         _LOGGER.debug("Querying id..")
         value = struct.pack('B', PROP_ID_QUERY)
         self._conn.make_request(PROP_WRITE_HANDLE, value)
