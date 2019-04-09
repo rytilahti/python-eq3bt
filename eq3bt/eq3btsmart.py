@@ -84,6 +84,9 @@ class Thermostat:
         self._away_duration = timedelta(days=30)
         self._away_end = None
 
+        self._firmware_version = None
+        self._device_serial = None
+
         self._conn = connection_cls(_mac)
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
 
@@ -149,8 +152,21 @@ class Thermostat:
             parsed = self.parse_schedule(data)
             self._schedule[parsed.day] = parsed
 
+        elif data[0] == PROP_ID_RETURN:
+            parsed = DeviceId.parse(data)
+            _LOGGER.debug("Parsed device data: %s", parsed)
+            self._firmware_version = parsed.version
+            self._device_serial = parsed.serial
+
+
         else:
             _LOGGER.debug("Unknown notification %s (%s)", data[0], codecs.encode(data, 'hex'))
+
+    def query_id(self):
+        """Query basic device information such as the firmware and device serial number."""
+        _LOGGER.debug("Querying id..")
+        value = struct.pack('B', PROP_ID_QUERY)
+        self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     def update(self):
         """Update the data from the thermostat. Always sets the current time."""
@@ -390,3 +406,13 @@ class Thermostat:
     @property
     def away_end(self):
         return self._away_end
+
+    @property
+    def firmware_version(self):
+        """Return the firmware version."""
+        return self._firmware_version
+
+    @property
+    def device_serial(self):
+        """Return the device serial number."""
+        return self._device_serial
