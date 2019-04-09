@@ -46,7 +46,8 @@ class WindowOpenTimeAdapter(Adapter):
             obj = obj.seconds
         if 0 <= obj <= 3600.0:
             return int(obj / 300.0)
-        raise ValueError("Window open time must be between 0 and 60 minutes in intervals of 5 minutes.")
+        raise ValueError("Window open time must be between 0 and 60 minutes "
+                         "in intervals of 5 minutes.")
 
 
 class TempOffsetAdapter(Adapter):
@@ -57,7 +58,8 @@ class TempOffsetAdapter(Adapter):
     def _encode(self, obj, context, path):
         if -3.5 <= obj <= 3.5:
             return int(obj * 2.0) + 7
-        raise ValueError("Temperature offset must be between -3.5 and 3.5 (in intervals of 0.5).")
+        raise ValueError("Temperature offset must be between -3.5 and 3.5 (in "
+                         "intervals of 0.5).")
 
 
 ModeFlags = "ModeFlags" / FlagsEnum(Int8ub,
