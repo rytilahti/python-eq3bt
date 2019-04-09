@@ -10,6 +10,7 @@ with support for more features and better device handling.
 * Reading device status: locked, low battery, valve state, window open, target temperature, active mode
 * Writing settings: target temperature, auto mode presets, temperature offset
 * Setting the active mode: auto, manual, boost, away
+* Reading the device serial number and firmware version
 
 ## Not (yet) supported)
 
