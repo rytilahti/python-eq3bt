@@ -80,11 +80,11 @@ class Thermostat:
 
         self._schedule = {}
 
-        self._window_open_temperature = Mode.Unknown
-        self._window_open_time = Mode.Unknown
-        self._comfort_temperature = Mode.Unknown
-        self._eco_temperature = Mode.Unknown
-        self._temperature_offset = Mode.Unknown
+        self._window_open_temperature = None
+        self._window_open_time = None
+        self._comfort_temperature = None
+        self._eco_temperature = None
+        self._temperature_offset = None
 
         self._away_temp = EQ3BT_AWAY_TEMP
         self._away_duration = timedelta(days=30)
@@ -153,6 +153,12 @@ class Thermostat:
                 self._comfort_temperature = presets.comfort_temp
                 self._eco_temperature = presets.eco_temp
                 self._temperature_offset = presets.offset
+            else:
+                self._window_open_temperature = None
+                self._window_open_time = None
+                self._comfort_temperature = None
+                self._eco_temperature = None
+                self._temperature_offset = None
 
             _LOGGER.debug("Valve state: %s", self._valve_state)
             _LOGGER.debug("Mode:        %s", self.mode_readable)
@@ -344,7 +350,7 @@ class Thermostat:
 
     @window_open_temperature.setter
     def window_open_temperature(self, value):
-        if self._window_open_time == Mode.Unknown:
+        if self._window_open_time is None:
             raise ValueError("Presets cannot be read. Please try updating the device firmware.")
         self.window_open_config(value, self._window_open_time)
 
@@ -355,7 +361,7 @@ class Thermostat:
 
     @window_open_time.setter
     def window_open_time(self, value):
-        if self._window_open_temperature == Mode.Unknown:
+        if self._window_open_temperature is None:
             raise ValueError("Presets cannot be read. Please try updating the device firmware.")
         if not isinstance(value, timedelta):
             value = timedelta(minutes=value)
@@ -395,7 +401,7 @@ class Thermostat:
 
     @comfort_temperature.setter
     def comfort_temperature(self, value):
-        if self._eco_temperature == Mode.Unknown:
+        if self._eco_temperature is None:
             raise ValueError("Presets cannot be read. Please try updating the device firmware.")
         self.temperature_presets(value, self._eco_temperature)
 
@@ -406,7 +412,7 @@ class Thermostat:
 
     @eco_temperature.setter
     def eco_temperature(self, value):
-        if self._comfort_temperature == Mode.Unknown:
+        if self._comfort_temperature is None:
             raise ValueError("Presets cannot be read. Please try updating the device firmware.")
         self.temperature_presets(self._comfort_temperature, value)
 
