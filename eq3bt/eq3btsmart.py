@@ -11,6 +11,7 @@ import logging
 import struct
 import codecs
 from datetime import datetime, timedelta, time
+from construct import Byte
 from enum import IntEnum
 
 from .connection import BTLEConnection
