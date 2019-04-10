@@ -113,8 +113,8 @@ def window_open(dev, temp, duration):
 
 
 @cli.command()
-@click.option('--comfort', type=float)
-@click.option('--eco', type=float)
+@click.option('--comfort', type=float, required=False)
+@click.option('--eco', type=float, required=False)
 @pass_dev
 def presets(dev, comfort, eco):
     """ Sets the preset temperatures for auto mode. """
@@ -142,13 +142,18 @@ def schedule(dev):
             click.echo("\t[%s-%s] %s" % (current_hour, hour.next_change_at, hour.target_temp))
             current_hour = hour.next_change_at
 
+
 @cli.command()
-@click.argument('offset', type=float)
+@click.argument('offset', type=float, required=False)
 @pass_dev
 def offset(dev, offset):
     """ Sets the temperature offset [-3,5 3,5] """
-    click.echo("Setting the offset to %s" % offset)
-    dev.temperature_offset = offset
+    if dev.temperature_offset is not None:
+        click.echo("Current temp offset: %s" % dev.temperature_offset)
+    if offset is not None:
+        click.echo("Setting the offset to %s" % offset)
+        dev.temperature_offset = offset
+
 
 @cli.command()
 @click.argument('away_end', type=Datetime(format='%Y-%m-%d %H:%M'), default=None, required=False)
@@ -174,6 +179,7 @@ def state(ctx):
     ctx.forward(boost)
     ctx.forward(temp)
     ctx.forward(presets)
+    ctx.forward(offset)
     ctx.forward(mode)
     ctx.forward(valve_state)
 
