@@ -165,7 +165,8 @@ class Thermostat:
             _LOGGER.debug("Mode:             %s", self.mode_readable)
             _LOGGER.debug("Target temp:      %s", self._target_temperature)
             _LOGGER.debug("Away end:         %s", self._away_end)
-            _LOGGER.debug("Window open temp: %s", self._window_open_temperature)
+            _LOGGER.debug("Window open temp: %s",
+                          self._window_open_temperature)
             _LOGGER.debug("Window open time: %s", self._window_open_time)
             _LOGGER.debug("Comfort temp:     %s", self._comfort_temperature)
             _LOGGER.debug("Eco temp:         %s", self._eco_temperature)
