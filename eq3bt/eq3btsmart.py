@@ -161,10 +161,15 @@ class Thermostat:
                 self._eco_temperature = None
                 self._temperature_offset = None
 
-            _LOGGER.debug("Valve state: %s", self._valve_state)
-            _LOGGER.debug("Mode:        %s", self.mode_readable)
-            _LOGGER.debug("Target temp: %s", self._target_temperature)
-            _LOGGER.debug("Away end:    %s", self._away_end)
+            _LOGGER.debug("Valve state:      %s", self._valve_state)
+            _LOGGER.debug("Mode:             %s", self.mode_readable)
+            _LOGGER.debug("Target temp:      %s", self._target_temperature)
+            _LOGGER.debug("Away end:         %s", self._away_end)
+            _LOGGER.debug("Window open temp: %s", self._window_open_temperature)
+            _LOGGER.debug("Window open time: %s", self._window_open_time)
+            _LOGGER.debug("Comfort temp:     %s", self._comfort_temperature)
+            _LOGGER.debug("Eco temp:         %s", self._eco_temperature)
+            _LOGGER.debug("Temp offset:      %s", self._temperature_offset)
 
         elif data[0] == PROP_SCHEDULE_RETURN:
             parsed = self.parse_schedule(data)
