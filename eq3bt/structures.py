@@ -1,9 +1,10 @@
 """ Contains construct adapters and structures. """
-from construct import Struct, Adapter, ExprAdapter, Int8ub, Enum, FlagsEnum, Const, Pass, GreedyRange, GreedyBytes, IfThenElse, If, Bytes, Byte
-import struct
+from construct import (Struct, Adapter, Int8ub, Enum, FlagsEnum, Const,
+                       GreedyRange, GreedyBytes, IfThenElse, Bytes, Byte)
 from datetime import datetime, time
-from math import floor
 
+
+PROP_ID_RETURN = 1
 PROP_INFO_RETURN = 2
 PROP_SCHEDULE_SET = 0x10
 PROP_SCHEDULE_RETURN = 0x21
@@ -71,6 +72,13 @@ class AwayDataAdapter(Adapter):
         return (obj.day, year, hour, obj.month)
 
 
+class DeviceSerialAdapter(Adapter):
+    """ Adapter to decode the device serial number. """
+    def _decode(self, obj, context, path):
+        return bytearray(n - 0x30
+                         for n in obj).decode()
+
+
 Status = "Status" / Struct(
     "cmd" / Const(PROP_INFO_RETURN, Int8ub),
     Const(0x01, Int8ub),
@@ -92,4 +100,13 @@ Schedule = "Schedule" / Struct(
         "target_temp" / TempAdapter(Int8ub),
         "next_change_at" / TimeAdapter(Int8ub),
     )),
+)
+
+DeviceId = "DeviceId" / Struct(
+    "cmd" / Const(PROP_ID_RETURN, Int8ub),
+    "version" / Int8ub,
+    Int8ub,
+    Int8ub,
+    "serial" / DeviceSerialAdapter(Bytes(10)),
+    Int8ub,
 )

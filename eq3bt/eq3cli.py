@@ -152,6 +152,16 @@ def away(dev, away_end, temperature):
         click.echo("Disabling away mode")
     dev.set_away(away_end, temperature)
 
+
+@cli.command()
+@pass_dev
+def device(dev):
+    """ Displays basic device information. """
+    dev.query_id()
+    click.echo("Firmware version: %s" % dev.firmware_version)
+    click.echo("Device serial:    %s" % dev.device_serial)
+
+
 @cli.command()
 @click.pass_context
 def state(ctx):
