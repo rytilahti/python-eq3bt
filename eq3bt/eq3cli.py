@@ -103,19 +103,29 @@ def low_battery(dev):
 def window_open(dev, temp, duration):
     """ Gets and sets the window open settings. """
     click.echo("Window open: %s" % dev.window_open)
+    if dev.window_open_temperature is not None:
+        click.echo("Window open temp: %s" % dev.window_open_temperature)
+    if dev.window_open_time is not None:
+        click.echo("Window open time: %s" % dev.window_open_time)
     if temp and duration:
         click.echo("Setting window open conf, temp: %s duration: %s" % (temp, duration))
         dev.window_open_config(temp, duration)
 
 
 @cli.command()
-@click.option('--comfort', type=float)
-@click.option('--eco', type=float)
+@click.option('--comfort', type=float, required=False)
+@click.option('--eco', type=float, required=False)
 @pass_dev
 def presets(dev, comfort, eco):
     """ Sets the preset temperatures for auto mode. """
-    click.echo("Setting presets: comfort %s, eco %s" % (comfort, eco))
-    dev.temperature_presets(comfort, eco)
+    if dev.comfort_temperature is not None:
+        click.echo("Current comfort temp: %s" % dev.comfort_temperature)
+    if dev.eco_temperature is not None:
+        click.echo("Current eco temp: %s" % dev.eco_temperature)
+    if comfort and eco:
+        click.echo("Setting presets: comfort %s, eco %s" % (comfort, eco))
+        dev.temperature_presets(comfort, eco)
+
 
 @cli.command()
 @pass_dev
@@ -132,13 +142,18 @@ def schedule(dev):
             click.echo("\t[%s-%s] %s" % (current_hour, hour.next_change_at, hour.target_temp))
             current_hour = hour.next_change_at
 
+
 @cli.command()
-@click.argument('offset', type=float)
+@click.argument('offset', type=float, required=False)
 @pass_dev
 def offset(dev, offset):
     """ Sets the temperature offset [-3,5 3,5] """
-    click.echo("Setting the offset to %s" % offset)
-    dev.temperature_offset(offset)
+    if dev.temperature_offset is not None:
+        click.echo("Current temp offset: %s" % dev.temperature_offset)
+    if offset is not None:
+        click.echo("Setting the offset to %s" % offset)
+        dev.temperature_offset = offset
+
 
 @cli.command()
 @click.argument('away_end', type=Datetime(format='%Y-%m-%d %H:%M'), default=None, required=False)
@@ -173,7 +188,8 @@ def state(ctx):
     ctx.forward(window_open)
     ctx.forward(boost)
     ctx.forward(temp)
-    # ctx.forward(presets)
+    ctx.forward(presets)
+    ctx.forward(offset)
     ctx.forward(mode)
     ctx.forward(valve_state)
 
