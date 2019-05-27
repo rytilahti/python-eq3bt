@@ -10,12 +10,12 @@ Schedule needs to be requested with query_schedule() before accessing for simila
 import logging
 import struct
 import codecs
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 from construct import Byte
 from enum import IntEnum
 
 from .connection import BTLEConnection
-from .structures import *
+from .structures import AwayDataAdapter, DeviceId, Schedule, Status
 
 _LOGGER = logging.getLogger(__name__)
 
