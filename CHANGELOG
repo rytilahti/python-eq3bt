@@ -1,6 +1,19 @@
 Changelog
 =========
 
+
+0.1.11 (2019-05-27)
+-------------------
+
+- Decoding presets in status messages (#33) [Matthias Erll]
+
+- Adding device serial number and firmware (#31) [Matthias Erll]
+
+- Context.invoke() -> Context.forward() (#28) [Till]
+
+- Require python 3.4 or newer in setup.py, closes #23. [Teemu Rytilahti]
+
+
 0.1.10 (2018-11-09))
 ------------------------
 - Context.invoke() -> Context.forward() (#28) [Till]
