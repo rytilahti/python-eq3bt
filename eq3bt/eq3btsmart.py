@@ -10,11 +10,12 @@ Schedule needs to be requested with query_schedule() before accessing for simila
 import logging
 import struct
 import codecs
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
+from construct import Byte
 from enum import IntEnum
 
 from .connection import BTLEConnection
-from .structures import *
+from .structures import AwayDataAdapter, DeviceId, Schedule, Status
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +81,12 @@ class Thermostat:
 
         self._schedule = {}
 
+        self._window_open_temperature = None
+        self._window_open_time = None
+        self._comfort_temperature = None
+        self._eco_temperature = None
+        self._temperature_offset = None
+
         self._away_temp = EQ3BT_AWAY_TEMP
         self._away_duration = timedelta(days=30)
         self._away_end = None
@@ -143,10 +150,30 @@ class Thermostat:
             else:
                 self._mode = Mode.Auto
 
-            _LOGGER.debug("Valve state: %s", self._valve_state)
-            _LOGGER.debug("Mode:        %s", self.mode_readable)
-            _LOGGER.debug("Target temp: %s", self._target_temperature)
-            _LOGGER.debug("Away end:    %s", self._away_end)
+            presets = status.presets
+            if presets:
+                self._window_open_temperature = presets.window_open_temp
+                self._window_open_time = presets.window_open_time
+                self._comfort_temperature = presets.comfort_temp
+                self._eco_temperature = presets.eco_temp
+                self._temperature_offset = presets.offset
+            else:
+                self._window_open_temperature = None
+                self._window_open_time = None
+                self._comfort_temperature = None
+                self._eco_temperature = None
+                self._temperature_offset = None
+
+            _LOGGER.debug("Valve state:      %s", self._valve_state)
+            _LOGGER.debug("Mode:             %s", self.mode_readable)
+            _LOGGER.debug("Target temp:      %s", self._target_temperature)
+            _LOGGER.debug("Away end:         %s", self._away_end)
+            _LOGGER.debug("Window open temp: %s",
+                          self._window_open_temperature)
+            _LOGGER.debug("Window open time: %s", self._window_open_time)
+            _LOGGER.debug("Comfort temp:     %s", self._comfort_temperature)
+            _LOGGER.debug("Eco temp:         %s", self._eco_temperature)
+            _LOGGER.debug("Temp offset:      %s", self._temperature_offset)
 
         elif data[0] == PROP_SCHEDULE_RETURN:
             parsed = self.parse_schedule(data)
@@ -339,6 +366,16 @@ class Thermostat:
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
     @property
+    def window_open_temperature(self):
+        """The temperature to set when an open window is detected."""
+        return self._window_open_temperature
+
+    @property
+    def window_open_time(self):
+        """Timeout to reset the thermostat after an open window is detected."""
+        return self._window_open_time
+
+    @property
     def locked(self):
         """Returns True if the thermostat is locked."""
         return self._raw_mode and self._raw_mode.LOCKED
@@ -365,6 +402,22 @@ class Thermostat:
                             int(eco * 2))
         self._conn.make_request(PROP_WRITE_HANDLE, value)
 
+    @property
+    def comfort_temperature(self):
+        """Returns the comfort temperature preset of the thermostat."""
+        return self._comfort_temperature
+
+    @property
+    def eco_temperature(self):
+        """Returns the eco temperature preset of the thermostat."""
+        return self._eco_temperature
+
+    @property
+    def temperature_offset(self):
+        """Returns the thermostat's temperature offset."""
+        return self._temperature_offset
+
+    @temperature_offset.setter
     def temperature_offset(self, offset):
         """Sets the thermostat's temperature offset."""
         _LOGGER.debug("Setting offset: %s", offset)
