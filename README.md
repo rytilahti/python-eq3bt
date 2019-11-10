@@ -54,6 +54,34 @@ thermostat.query_schedule(0)
 print(thermostat.schedule)
 ```
 
+## Setting schedule
+
+The schedule can be set on a per day basis like follows:
+
+```
+from datetime import time
+from eq3bt import Thermostat
+from eq3bt import HOUR_24_PLACEHOLDER as END_OF_DAY
+
+thermostat = Thermostat('12:34:56:78:9A:BC')
+thermostat.set_schedule(
+    dict(
+        cmd="write",
+        day="sun",
+        base_temp=18,
+        next_change_at=time(8, 0),
+        hours=[
+            dict(target_temp=23, next_change_at=time(20, 0)),
+            dict(target_temp=18, next_change_at=END_OF_DAY),
+            dict(target_temp=23, next_change_at=END_OF_DAY),
+            dict(target_temp=23, next_change_at=END_OF_DAY),
+            dict(target_temp=23, next_change_at=END_OF_DAY),
+            dict(target_temp=23, next_change_at=END_OF_DAY)
+        ]
+    )
+)
+```
+
 # Command-line tool
 
 To test all available functionality a cli tool inside utils can be used.
