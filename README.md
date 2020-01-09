@@ -56,6 +56,8 @@ print(thermostat.schedule)
 
 ## Setting schedule
 
+The 'base_temp' and 'next_change_at' paramater define the first period for that 'day' (the period from midnight up till next_change_at).
+
 The schedule can be set on a per day basis like follows:
 
 ```
