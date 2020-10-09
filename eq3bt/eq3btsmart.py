@@ -110,6 +110,9 @@ class Thermostat:
     def connect(self, iface):
         self._conn.connect(iface)
 
+    def disconnect(self):
+        self._conn.disconnect()
+
     def _verify_temperature(self, temp):
         """Verifies that the temperature is valid.
             :raises TemperatureException: On invalid temperature.

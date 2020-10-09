@@ -57,6 +57,9 @@ class BTLEConnection(btle.DefaultDelegate):
 
     def connect(self, iface):
         self._keep_connected = True
+        self._connect(iface)
+    
+    def _connect(self, iface):
         try:
             self._conn.connect(self._mac, iface=iface)
         except btle.BTLEException as ex:
@@ -66,6 +69,10 @@ class BTLEConnection(btle.DefaultDelegate):
             except Exception as ex2:
                 _LOGGER.debug("Second connection try to %s using ifaces %s failed: %s", self._mac, iface, ex2)
                 raise
+    
+    def disconnect(self):
+        self._conn.disconnect()
+        self._conn = None
 
     def handleNotification(self, handle, data):
         """Handle Callback from a Bluetooth (GATT) request."""
