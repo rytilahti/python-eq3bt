@@ -127,3 +127,44 @@ For help, use --help
 ```bash
 eq3cli --help
 ```
+# Pairing
+
+If you have thermostat with firmware version 1.20+ pairing may be needed. Below simple procedure to do that.
+
+```
+Press and hold wheel on thermostat until Pair will be displayed. Remember or write it.
+
+$ sudo bluetoothctl
+[bluetooth]# power on
+[bluetooth]# agent on
+[bluetooth]# default-agent
+[bluetooth]# scan on
+[bluetooth]# scan off
+[bluetooth]# pair 00:1A:22:06:A7:83
+[agent] Enter passkey (number in 0-999999): <enter pin>
+[bluetooth]# trust 00:1A:22:06:A7:83
+[bluetooth]# disconnect 00:1A:22:06:A7:83
+[bluetooth]# exit
+
+Optional steps:
+[bluetooth]# devices - to list all bluetooth devices
+[bluetooth]# info 00:1A:22:06:A7:83
+Device 00:1A:22:06:A7:83 (public)
+	Name: CC-RT-BLE
+	Alias: CC-RT-BLE
+	Paired: yes
+	Trusted: yes
+	Blocked: no
+	Connected: no
+	LegacyPairing: no
+	UUID: Generic Access Profile    (00001800-0000-1000-8000-00805f9b34fb)
+	UUID: Generic Attribute Profile (00001801-0000-1000-8000-00805f9b34fb)
+	UUID: Device Information        (0000180a-0000-1000-8000-00805f9b34fb)
+	UUID: Vendor specific           (3e135142-654f-9090-134a-a6ff5bb77046)
+	UUID: Vendor specific           (9e5d1e47-5c13-43a0-8635-82ad38a1386f)
+	ManufacturerData Key: 0x0000
+	ManufacturerData Value:
+  00 00 00 00 00 00 00 00 00                       .........
+```
+
+Be aware that sometimes if you pair your device then mobile application (calor BT) can't connect with thermostat and vice versa.
