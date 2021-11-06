@@ -21,7 +21,7 @@ def validate_mac(ctx, param, mac):
 
 @click.group(invoke_without_command=True)
 @click.option('--mac', envvar="EQ3_MAC", required=True, callback=validate_mac)
-@click.option('--interface', default=False)
+@click.option('--interface', default=None)
 @click.option('--debug/--normal', default=False)
 @click.pass_context
 def cli(ctx, mac, interface, debug):
