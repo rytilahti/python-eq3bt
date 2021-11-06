@@ -71,7 +71,7 @@ class TemperatureException(Exception):
 class Thermostat:
     """Representation of a EQ3 Bluetooth Smart thermostat."""
 
-    def __init__(self, _mac, connection_cls=BTLEConnection):
+    def __init__(self, _mac, _iface=None, connection_cls=BTLEConnection):
         """Initialize the thermostat."""
 
         self._target_temperature = Mode.Unknown
@@ -94,7 +94,7 @@ class Thermostat:
         self._firmware_version = None
         self._device_serial = None
 
-        self._conn = connection_cls(_mac)
+        self._conn = connection_cls(_mac, _iface)
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
 
     def __str__(self):
@@ -464,3 +464,4 @@ class Thermostat:
     def device_serial(self):
         """Return the device serial number."""
         return self._device_serial
+
