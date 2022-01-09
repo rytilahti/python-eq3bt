@@ -71,7 +71,7 @@ class TemperatureException(Exception):
 class Thermostat:
     """Representation of a EQ3 Bluetooth Smart thermostat."""
 
-    def __init__(self, _mac, _iface=None, connection_cls=BTLEConnection):
+    def __init__(self, _mac, _iface=None, connection_cls=BTLEConnection, connection_attempts=2):
         """Initialize the thermostat."""
 
         self._target_temperature = Mode.Unknown
@@ -94,10 +94,15 @@ class Thermostat:
         self._firmware_version = None
         self._device_serial = None
 
-        self._conn = connection_cls(_mac, _iface)
+        self._conn = connection_cls(_mac, _iface, connection_attempts)
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
+        self._conn_error = False
+
 
     def __str__(self):
+        if self._conn_error:
+            return "[%s] Connection error" % (self._conn.mac)
+
         away_end = "no"
         if self.away_end:
             away_end = "end: %s" % self._away_end
@@ -186,13 +191,18 @@ class Thermostat:
             self._device_serial = parsed.serial
 
         else:
-            _LOGGER.debug("Unknown notification %s (%s)", data[0], codecs.encode(data, 'hex'))
+            _LOGGER.info("Unknown notification %s (%s)", data[0], codecs.encode(data, 'hex'))
 
     def query_id(self):
         """Query device identification information, e.g. the serial number."""
         _LOGGER.debug("Querying id..")
         value = struct.pack('B', PROP_ID_QUERY)
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     def update(self):
         """Update the data from the thermostat. Always sets the current time."""
@@ -201,8 +211,12 @@ class Thermostat:
         value = struct.pack('BBBBBBB', PROP_INFO_QUERY,
                             time.year % 100, time.month, time.day,
                             time.hour, time.minute, time.second)
-
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     def query_schedule(self, day):
         _LOGGER.debug("Querying schedule..")
@@ -211,8 +225,12 @@ class Thermostat:
             _LOGGER.error("Invalid day: %s", day)
 
         value = struct.pack('BB', PROP_SCHEDULE_QUERY, day)
-
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def schedule(self):
@@ -224,7 +242,12 @@ class Thermostat:
     def set_schedule(self, data):
         """Sets the schedule for the given day. """
         value = Schedule.build(data)
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def target_temperature(self):
@@ -241,8 +264,12 @@ class Thermostat:
         else:
             self._verify_temperature(temperature)
             value = struct.pack('BB', PROP_TEMPERATURE_WRITE, dev_temp)
-
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def mode(self):
@@ -296,7 +323,12 @@ class Thermostat:
         value = struct.pack('BB', PROP_MODE_WRITE, mode)
         if payload:
             value += payload
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def mode_readable(self):
@@ -340,7 +372,12 @@ class Thermostat:
         """Sets boost mode."""
         _LOGGER.debug("Setting boost mode: %s", boost)
         value = struct.pack('BB', PROP_BOOST, bool(boost))
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def valve_state(self):
@@ -363,7 +400,12 @@ class Thermostat:
 
         value = struct.pack('BBB', PROP_WINDOW_OPEN_CONFIG,
                             int(temperature * 2), int(duration.seconds / 300))
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def window_open_temperature(self):
@@ -385,7 +427,12 @@ class Thermostat:
         """Locks or unlocks the thermostat."""
         _LOGGER.debug("Setting the lock: %s", lock)
         value = struct.pack('BB', PROP_LOCK, bool(lock))
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def low_battery(self):
@@ -400,7 +447,12 @@ class Thermostat:
         self._verify_temperature(eco)
         value = struct.pack('BBB', PROP_COMFORT_ECO_CONFIG, int(comfort * 2),
                             int(eco * 2))
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     @property
     def comfort_temperature(self):
@@ -433,12 +485,22 @@ class Thermostat:
             current += 0.5
 
         value = struct.pack('BB', PROP_OFFSET, values[offset])
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     def activate_comfort(self):
         """Activates the comfort temperature."""
         value = struct.pack('B', PROP_COMFORT)
-        self._conn.make_request(PROP_WRITE_HANDLE, value)
+        try:
+            self._conn.make_request(PROP_WRITE_HANDLE, value)
+        except Exception as ex:
+            _LOGGER.warning(ex)
+            self._conn_error = True
+            return
 
     def activate_eco(self):
         """Activates the comfort temperature."""
@@ -464,4 +526,3 @@ class Thermostat:
     def device_serial(self):
         """Return the device serial number."""
         return self._device_serial
-
