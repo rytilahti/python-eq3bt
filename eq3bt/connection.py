@@ -15,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 class BTLEConnection(btle.DefaultDelegate):
     """Representation of a BTLE Connection."""
 
-    def __init__(self, mac, iface):
+    def __init__(self, mac, iface, connection_attempts):
         """Initialize the connection."""
         btle.DefaultDelegate.__init__(self)
 
@@ -23,6 +23,7 @@ class BTLEConnection(btle.DefaultDelegate):
         self._mac = mac
         self._iface = iface
         self._callbacks = {}
+        self._connection_attempts = connection_attempts
 
     def __enter__(self):
         """
@@ -33,15 +34,15 @@ class BTLEConnection(btle.DefaultDelegate):
         self._conn = btle.Peripheral()
         self._conn.withDelegate(self)
         _LOGGER.debug("Trying to connect to %s", self._mac)
-        try:
-            self._conn.connect(self._mac, iface=self._iface)
-        except btle.BTLEException as ex:
-            _LOGGER.debug("Unable to connect to the device %s, retrying: %s", self._mac, ex)
+
+        for attempt in range(self._connection_attempts):
             try:
                 self._conn.connect(self._mac, iface=self._iface)
-            except Exception as ex2:
-                _LOGGER.debug("Second connection try to %s failed: %s", self._mac, ex2)
-                raise
+                break
+            except btle.BTLEException as ex:
+                _LOGGER.info("%s: Connection attempt #%s(%s) failed", self._mac, attempt+1, self._connection_attempts)
+                if attempt+1 == self._connection_attempts:
+                    raise
 
         _LOGGER.debug("Connected to %s", self._mac)
         return self
@@ -76,6 +77,5 @@ class BTLEConnection(btle.DefaultDelegate):
                     _LOGGER.debug("Waiting for notifications for %s", timeout)
                     self._conn.waitForNotifications(timeout)
         except btle.BTLEException as ex:
-            _LOGGER.debug("Got exception from bluepy while making a request: %s", ex)
+            _LOGGER.info("Got exception from bluepy while making a request: %s", ex)
             raise
-
