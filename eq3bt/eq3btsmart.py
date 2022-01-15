@@ -526,3 +526,8 @@ class Thermostat:
     def device_serial(self):
         """Return the device serial number."""
         return self._device_serial
+
+    @property
+    def connection_error(self):
+        """Return the connection error state"""
+        return self._conn_error
