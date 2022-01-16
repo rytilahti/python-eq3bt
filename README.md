@@ -37,8 +37,7 @@ print(thermostat)
 <aside class="notice">
 Notice: The device in question has to be disconnected from bluetoothd, since BTLE devices can only hold one connection at a time.
 
-The library will try to connect to the device second time in case it wasn't successful in the first time,
-which can happen if you are running other applications connecting to the same thermostat.
+The library can make several attempts connecting to the device in case it fails on one, which can happen e.g. if you are running other applications connecting to the same thermostat. The number of attempts can be specified via the optional parameter `connection_attempts` to the Thermostat class. By default, it is set to 2.
 </aside>
 
 ## Fetching schedule
