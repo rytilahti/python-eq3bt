@@ -191,7 +191,7 @@ class Thermostat:
             self._device_serial = parsed.serial
 
         else:
-            _LOGGER.info("Unknown notification %s (%s)", data[0], codecs.encode(data, 'hex'))
+            _LOGGER.debug("Unknown notification %s (%s)", data[0], codecs.encode(data, 'hex'))
 
     def query_id(self):
         """Query device identification information, e.g. the serial number."""

@@ -40,7 +40,7 @@ class BTLEConnection(btle.DefaultDelegate):
                 self._conn.connect(self._mac, iface=self._iface)
                 break
             except btle.BTLEException as ex:
-                _LOGGER.info("%s: Connection attempt #%s(%s) failed", self._mac, attempt+1, self._connection_attempts)
+                _LOGGER.warning("%s: Connection attempt #%s(%s) failed", self._mac, attempt+1, self._connection_attempts)
                 if attempt+1 == self._connection_attempts:
                     raise
 
@@ -77,5 +77,5 @@ class BTLEConnection(btle.DefaultDelegate):
                     _LOGGER.debug("Waiting for notifications for %s", timeout)
                     self._conn.waitForNotifications(timeout)
         except btle.BTLEException as ex:
-            _LOGGER.info("Got exception from bluepy while making a request: %s", ex)
+            _LOGGER.debug("Got exception from bluepy while making a request: %s", ex)
             raise
