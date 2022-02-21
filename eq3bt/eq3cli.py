@@ -22,17 +22,17 @@ def validate_mac(ctx, param, mac):
 @click.group(invoke_without_command=True)
 @click.option('--mac', envvar="EQ3_MAC", required=True, callback=validate_mac)
 @click.option('--interface', default=None)
-@click.option('--connectionattempts', default=2)
+@click.option('--retries', default=1)
 @click.option('--debug/--normal', default=False)
 @click.pass_context
-def cli(ctx, mac, interface, connectionattempts, debug):
+def cli(ctx, mac, interface, retries, debug):
     """ Tool to query and modify the state of EQ3 BT smart thermostat. """
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
 
-    thermostat = Thermostat(mac, interface, connection_attempts=connectionattempts)
+    thermostat = Thermostat(mac, interface, retries=retries)
     thermostat.update()
     ctx.obj = thermostat
 

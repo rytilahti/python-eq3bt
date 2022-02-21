@@ -15,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 class BTLEConnection(btle.DefaultDelegate):
     """Representation of a BTLE Connection."""
 
-    def __init__(self, mac, iface, connection_attempts):
+    def __init__(self, mac, iface, retries):
         """Initialize the connection."""
         btle.DefaultDelegate.__init__(self)
 
@@ -23,7 +23,7 @@ class BTLEConnection(btle.DefaultDelegate):
         self._mac = mac
         self._iface = iface
         self._callbacks = {}
-        self._connection_attempts = connection_attempts
+        self._max_conn_attempts = retries+1
 
     def __enter__(self):
         """
@@ -35,13 +35,13 @@ class BTLEConnection(btle.DefaultDelegate):
         self._conn.withDelegate(self)
         _LOGGER.debug("Trying to connect to %s", self._mac)
 
-        for attempt in range(self._connection_attempts):
+        for conn_attempt in range(1, self._max_conn_attempts+1):
             try:
                 self._conn.connect(self._mac, iface=self._iface)
                 break
             except btle.BTLEException as ex:
-                _LOGGER.warning("%s: Connection attempt #%s(%s) failed", self._mac, attempt+1, self._connection_attempts)
-                if attempt+1 == self._connection_attempts:
+                _LOGGER.warning("%s: Connection attempt #%s(%s) failed", self._mac, conn_attempt, self._max_conn_attempts)
+                if conn_attempt == self._max_conn_attempts:
                     raise
 
         _LOGGER.debug("Connected to %s", self._mac)
