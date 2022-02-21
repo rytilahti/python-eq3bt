@@ -19,6 +19,7 @@ eq3cli = "eq3bt.eq3cli:cli"
 python = "^3.7"
 click = "*"
 bluepy = ">=1.0.5"
+construct = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
