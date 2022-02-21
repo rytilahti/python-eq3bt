@@ -25,6 +25,9 @@ pytest = "*"
 pre-commit = "*"
 toml = "*"
 tox = "*"
+codecov = "*"
+pytest-cov = "*"
+
 
 [tool.isort]
 multi_line_output = 3
