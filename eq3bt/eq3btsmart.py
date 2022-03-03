@@ -15,7 +15,10 @@ from enum import IntEnum
 
 from construct import Byte
 
-from .connection import BTLEConnection
+try:
+    from .connection import BTLEConnection
+except ImportError:
+    from .gattlibconnection import BTLEConnection
 from .structures import AwayDataAdapter, DeviceId, Schedule, Status
 
 _LOGGER = logging.getLogger(__name__)
