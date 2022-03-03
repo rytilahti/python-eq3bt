@@ -2,8 +2,8 @@
 A simple wrapper for bluepy's btle.Connection.
 Handles Connection duties (reconnecting etc.) transparently.
 """
-import logging
 import codecs
+import logging
 
 from bluepy import btle
 
@@ -36,7 +36,9 @@ class BTLEConnection(btle.DefaultDelegate):
         try:
             self._conn.connect(self._mac, iface=self._iface)
         except btle.BTLEException as ex:
-            _LOGGER.debug("Unable to connect to the device %s, retrying: %s", self._mac, ex)
+            _LOGGER.debug(
+                "Unable to connect to the device %s, retrying: %s", self._mac, ex
+            )
             try:
                 self._conn.connect(self._mac, iface=self._iface)
             except Exception as ex2:
@@ -53,7 +55,9 @@ class BTLEConnection(btle.DefaultDelegate):
 
     def handleNotification(self, handle, data):
         """Handle Callback from a Bluetooth (GATT) request."""
-        _LOGGER.debug("Got notification from %s: %s", handle, codecs.encode(data, 'hex'))
+        _LOGGER.debug(
+            "Got notification from %s: %s", handle, codecs.encode(data, "hex")
+        )
         if handle in self._callbacks:
             self._callbacks[handle](data)
 
@@ -70,12 +74,18 @@ class BTLEConnection(btle.DefaultDelegate):
         """Write a GATT Command without callback - not utf-8."""
         try:
             with self:
-                _LOGGER.debug("Writing %s to %s with with_response=%s", codecs.encode(value, 'hex'), handle, with_response)
-                self._conn.writeCharacteristic(handle, value, withResponse=with_response)
+                _LOGGER.debug(
+                    "Writing %s to %s with with_response=%s",
+                    codecs.encode(value, "hex"),
+                    handle,
+                    with_response,
+                )
+                self._conn.writeCharacteristic(
+                    handle, value, withResponse=with_response
+                )
                 if timeout:
                     _LOGGER.debug("Waiting for notifications for %s", timeout)
                     self._conn.waitForNotifications(timeout)
         except btle.BTLEException as ex:
             _LOGGER.debug("Got exception from bluepy while making a request: %s", ex)
             raise
-
