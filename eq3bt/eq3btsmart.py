@@ -15,10 +15,6 @@ from enum import IntEnum
 
 from construct import Byte
 
-try:
-    from .connection import BTLEConnection
-except ImportError:
-    from .gattlibconnection import BTLEConnection
 from .structures import AwayDataAdapter, DeviceId, Schedule, Status
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,7 +71,7 @@ class TemperatureException(Exception):
 class Thermostat:
     """Representation of a EQ3 Bluetooth Smart thermostat."""
 
-    def __init__(self, _mac, _iface=None, connection_cls=BTLEConnection):
+    def __init__(self, _mac, _iface=None, connection_cls=None):
         """Initialize the thermostat."""
 
         self._target_temperature = Mode.Unknown
@@ -98,6 +94,8 @@ class Thermostat:
         self._firmware_version = None
         self._device_serial = None
 
+        if connection_cls is None:
+            from .connection import BTLEConnection as connection_cls
         self._conn = connection_cls(_mac, _iface)
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
 
