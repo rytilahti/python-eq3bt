@@ -19,15 +19,21 @@ def validate_mac(ctx, param, mac):
 @click.option("--mac", envvar="EQ3_MAC", required=True, callback=validate_mac)
 @click.option("--interface", default=None)
 @click.option("--debug/--normal", default=False)
+@click.option("--backend", type=click.Choice(["bluepy", "gattlib"]), default="bluepy")
 @click.pass_context
-def cli(ctx, mac, interface, debug):
+def cli(ctx, mac, interface, debug, backend):
     """Tool to query and modify the state of EQ3 BT smart thermostat."""
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
 
-    thermostat = Thermostat(mac, interface)
+    if backend == "gattlib":
+        from .gattlibconnection import BTLEConnection
+
+        thermostat = Thermostat(mac, interface, BTLEConnection)
+    else:
+        thermostat = Thermostat(mac, interface)
     thermostat.update()
     ctx.obj = thermostat
 
