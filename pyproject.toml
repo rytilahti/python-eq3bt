@@ -20,6 +20,10 @@ python = "^3.7"
 click = "*"
 bluepy = ">=1.0.5"
 construct = "*"
+gattlib = { version = "*", optional = true }
+
+[tool.poetry.extras]
+gattlib = ["gattlib"]
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

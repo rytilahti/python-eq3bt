@@ -1,6 +1,6 @@
 # python-eq3bt
 
-Python library and a command line tool for EQ3 Bluetooth smart thermostats, uses bluepy for BTLE communication.
+Python library and a command line tool for EQ3 Bluetooth smart thermostats, uses bluepy or gattlib for BTLE communication.
 
 This library is a simplified version of bluepy_devices from Markus Peter (https://github.com/bimbar/bluepy_devices.git)
 with support for more features and better device handling.
