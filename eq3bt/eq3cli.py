@@ -154,7 +154,7 @@ def offset(dev, offset):
 
 
 @cli.command()
-@click.argument("away_end", type=click.Datetime(), default=None, required=False)
+@click.argument("away_end", type=click.DateTime(), default=None, required=False)
 @click.argument("temperature", type=float, default=None, required=False)
 @pass_dev
 def away(dev, away_end, temperature):
