@@ -7,6 +7,8 @@ import logging
 
 from bluepy import btle
 
+from . import BackendException
+
 DEFAULT_TIMEOUT = 1
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,7 +45,9 @@ class BTLEConnection(btle.DefaultDelegate):
                 self._conn.connect(self._mac, iface=self._iface)
             except Exception as ex2:
                 _LOGGER.debug("Second connection try to %s failed: %s", self._mac, ex2)
-                raise
+                raise BackendException(
+                    "Unable to connect to device using bluepy"
+                ) from ex2
 
         _LOGGER.debug("Connected to %s", self._mac)
         return self
@@ -88,4 +92,4 @@ class BTLEConnection(btle.DefaultDelegate):
                     self._conn.waitForNotifications(timeout)
         except btle.BTLEException as ex:
             _LOGGER.debug("Got exception from bluepy while making a request: %s", ex)
-            raise
+            raise BackendException("Exception on write using bluepy") from ex

@@ -8,6 +8,8 @@ import threading
 
 import gattlib
 
+from . import BackendException
+
 DEFAULT_TIMEOUT = 1
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,7 +49,9 @@ class BTLEConnection:
                 self._conn.connect()
             except Exception as ex2:
                 _LOGGER.debug("Second connection try to %s failed: %s", self._mac, ex2)
-                raise
+                raise BackendException(
+                    "unable to connect to device using gattlib"
+                ) from ex2
 
         _LOGGER.debug("Connected to %s", self._mac)
         return self
@@ -92,4 +96,4 @@ class BTLEConnection:
                     self._notifyevent.wait(timeout)
         except gattlib.BTBaseException as ex:
             _LOGGER.debug("Got exception from gattlib while making a request: %s", ex)
-            raise
+            raise BackendException("Exception on write using gattlib") from ex
