@@ -484,3 +484,8 @@ class Thermostat:
     def device_serial(self):
         """Return the device serial number."""
         return self._device_serial
+
+    @property
+    def mac(self):
+        """Return the mac address."""
+        return self._conn.mac
