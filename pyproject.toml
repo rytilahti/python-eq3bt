@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-eq3bt"
-version = "0.1.12"
+version = "0.2"
 description = "EQ3 bluetooth thermostat support library"
 license = "MIT"
 authors = ["Teemu R. <tpr@iki.fi>", "Markus Peter <mpeter@emdev.de>"]
