@@ -17,12 +17,14 @@ eq3cli = "eq3bt.eq3cli:cli"
 [tool.poetry.dependencies]
 python = "^3.7"
 click = "*"
-bluepy = ">=1.0.5"
 construct = "*"
+bleak = "*"
 gattlib = { version = "*", optional = true }
+bluepy = { version = ">=1.0.5", optional = true }
 
 [tool.poetry.extras]
 gattlib = ["gattlib"]
+bluepy = ["bluepy"]
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

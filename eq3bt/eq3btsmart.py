@@ -95,7 +95,7 @@ class Thermostat:
         self._device_serial = None
 
         if connection_cls is None:
-            from .connection import BTLEConnection as connection_cls
+            from .bleakconnection import BleakConnection as connection_cls
         self._conn = connection_cls(_mac, _iface)
         self._conn.set_callback(PROP_NTFY_HANDLE, self.handle_notification)
 
