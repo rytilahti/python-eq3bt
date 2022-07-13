@@ -1,6 +1,24 @@
 Changelog
 =========
 
+0.2 (2022-07-13)
+----------------
+
+- Add publish to pypi workflow (#54) [Teemu R]
+
+- Add bleak backend and make it default (#53) [Teemu R]
+
+- Wrap backend exceptions inside BackendException (#52) [Teemu R]
+
+- Add mac property to thermostat class (#51) [Teemu R]
+
+- Update README, pyproject.toml (#49) [Teemu R]
+
+- Support gattlib as an alternative btle library (#48) [Helmut Grohne]
+
+- Use poetry, add pre-commit hooks & mass format to modern standards,
+  add CI (#47) [Teemu R]
+
 
 0.1.12 (2021-11-13)
 -------------------
