@@ -15,7 +15,7 @@ from . import BackendException
 
 DEFAULT_TIMEOUT = 1
 
-# bleak backends are very loud, this reduces the log spam when using --debug
+# bleak backends are very loud on debug, this reduces the log spam when using --debug
 logging.getLogger("bleak.backends").setLevel(logging.WARNING)
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,8 +43,10 @@ class BleakConnection:
         """
         _LOGGER.debug("Trying to connect to %s", self._mac)
 
-        # TODO: bleak doesn't support interface binding?
-        self._conn = BleakClient(self._mac)
+        kwargs = {}
+        if self._iface is not None:
+            kwargs["adapter"] = self._iface
+        self._conn = BleakClient(self._mac, **kwargs)
         try:
             self._loop.run_until_complete(self._conn.connect())
         except BleakError as ex:
