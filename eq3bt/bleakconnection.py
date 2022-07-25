@@ -33,7 +33,12 @@ class BleakConnection:
         self._callbacks = {}
         self._notifyevent = asyncio.Event()
         self._notification_handle = None
-        self._loop = asyncio.new_event_loop()
+
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
 
     def __enter__(self):
         """
