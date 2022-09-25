@@ -31,14 +31,18 @@ class BleakConnection:
         self._mac = mac
         self._iface = iface
         self._callbacks = {}
-        self._notifyevent = asyncio.Event()
-        self._notification_handle = None
 
         try:
             self._loop = asyncio.get_running_loop()
         except RuntimeError:
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
+        try: # necessary on python < 3.10
+            self._notifyevent = asyncio.Event(loop=self._loop)
+        except TypeError: # raised on >= 3.10
+            self._notifyevent = asyncio.Event()
+
+        self._notification_handle = None
 
     def __enter__(self):
         """
