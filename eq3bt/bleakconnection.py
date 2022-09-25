@@ -83,10 +83,10 @@ class BleakConnection:
             self._loop.run_until_complete(self._conn.disconnect())
             self._conn = None
 
-    async def on_notification(self, handle, data):
+    async def on_notification(self, characteristic, data):
         """Handle Callback from a Bluetooth (GATT) request."""
         # The notification handles are off-by-one compared to gattlib and bluepy
-        handle = handle + 1
+        handle = characteristic.handle + 1
         _LOGGER.debug(
             "Got notification from %s: %s", handle, codecs.encode(data, "hex")
         )
