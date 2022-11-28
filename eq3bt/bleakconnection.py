@@ -31,14 +31,17 @@ class BleakConnection:
         self._mac = mac
         self._iface = iface
         self._callbacks = {}
-        self._notifyevent = asyncio.Event()
         self._notification_handle = None
 
         try:
             self._loop = asyncio.get_running_loop()
+            _LOGGER.debug("Using existing asyncio loop")
         except RuntimeError:
             self._loop = asyncio.new_event_loop()
+            _LOGGER.debug("Creating new asyncio loop")
             asyncio.set_event_loop(self._loop)
+
+        self._notifyevent = asyncio.Event()
 
     def __enter__(self):
         """
@@ -79,10 +82,14 @@ class BleakConnection:
             self._loop.run_until_complete(self._conn.disconnect())
             self._conn = None
 
-    async def on_notification(self, handle, data):
+    async def on_notification(self, characteristic, data):
         """Handle Callback from a Bluetooth (GATT) request."""
         # The notification handles are off-by-one compared to gattlib and bluepy
-        handle = handle + 1
+        try:
+            handle = characteristic.handle + 1
+        except:  # noqa: E722 # fallback to old-style, int-based handle
+            handle = characteristic + 1
+
         _LOGGER.debug(
             "Got notification from %s: %s", handle, codecs.encode(data, "hex")
         )
