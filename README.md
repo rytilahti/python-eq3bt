@@ -4,8 +4,8 @@ Python library and a command line tool for EQ3 Bluetooth smart thermostats, uses
 
 # Attention Home Assistant users
 
-This library (and therefore the built-in integration) is **not compatible** anymore since 2022.7.0. 
-Use [this](https://github.com/dbuezas/eq3btsmart) custom component instead.
+This library (and therefore the built-in integration) is **not compatible** anymore since 2022.7.0.
+Use [this custom component](https://github.com/dbuezas/eq3btsmart) instead.
 
 # Features
 
