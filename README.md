@@ -2,6 +2,11 @@
 
 Python library and a command line tool for EQ3 Bluetooth smart thermostats, uses bleak (default), bluepy or gattlib for BTLE communication.
 
+# Attention Home Assistant users
+
+This library (and therefore the built-in integration) is **not compatible** anymore since 2022.7.0.
+Use [this custom component](https://github.com/dbuezas/eq3btsmart) instead.
+
 # Features
 
 * Reading device status: locked, low battery, valve state, window open, target temperature, active mode
